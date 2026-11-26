@@ -50,8 +50,11 @@ export function AdminDashboardView({
     setUpdatingId(null);
   }
 
-  // Fungsi Ubah Peranan Pengguna
-  async function handleChangeRole(userId: string, newRole: "CONSUMER" | "MERCHANT" | "ADMIN") {
+  // Fungsi Ubah Peranan Pengguna (Role: USER, AGEN_PROMOTER, MERCHANT, ADMIN)
+  async function handleChangeRole(
+    userId: string,
+    newRole: "USER" | "AGEN_PROMOTER" | "MERCHANT" | "ADMIN"
+  ) {
     setUpdatingId(userId);
     await updateUserRoleAction(userId, newRole);
     setUpdatingId(null);
@@ -72,7 +75,8 @@ export function AdminDashboardView({
       "Token Ditebus",
       "Tunai Dibayar (RM)",
       "Hak Peniaga (RM)",
-      "Caj Platform (RM)",
+      "Fi MORRA 5% (RM)",
+      "Caj CHIP 1% (RM)",
       "Status",
       "Tarikh",
     ];
@@ -86,6 +90,7 @@ export function AdminDashboardView({
       o.cashPaidRm.toFixed(2),
       o.merchantNetRm.toFixed(2),
       o.platformFeeRm.toFixed(2),
+      o.chipGatewayFeeRm.toFixed(2),
       `"${o.status}"`,
       `"${new Date(o.createdAt).toLocaleString("ms-MY")}"`,
     ]);
@@ -97,36 +102,33 @@ export function AdminDashboardView({
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `sunno_laporan_pesanan_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute("download", `morra_laporan_pesanan_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   }
 
-  // JIKA BUKAN ADMIN: Tunjukkan Gerbang Kebenaran
   if (!isAdmin) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12">
-        <div className="w-full max-w-md rounded-2xl border border-amber-200 bg-white p-8 text-center shadow-sm">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
-            <ShieldAlert className="h-8 w-8" />
+      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-4">
+        <div className="w-full max-w-md rounded-2xl border border-red-200 bg-white p-6 text-center shadow-lg sm:p-8">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-100 text-red-600">
+            <ShieldAlert className="h-7 w-7" />
           </div>
-          <h1 className="mt-4 text-xl font-extrabold text-slate-900">
-            Akses Panel Pentadbir Terhad
-          </h1>
-          <p className="mt-2 text-xs leading-relaxed text-slate-600">
-            Halaman ini dikhaskan untuk <strong>ADMIN</strong> sahaja. Untuk tujuan pembangunan lokal (MVP), anda boleh mengaktifkan peranan Admin bagi akaun anda sekarang.
+          <h2 className="mt-4 text-xl font-bold text-slate-900">Akses Pentadbir Terhad</h2>
+          <p className="mt-2 text-xs text-slate-600 leading-relaxed">
+            Akaun anda tidak mempunyai kelulusan peranan <strong>ADMIN</strong> untuk membuka Pusat Kawalan Superadmin MORRA.
           </p>
 
-          <button
-            onClick={handleClaimAdmin}
-            disabled={claiming}
-            className="mt-6 w-full rounded-xl bg-primary py-3 text-sm font-bold text-white shadow-md hover:bg-blue-900 transition disabled:opacity-50"
-          >
-            {claiming ? "Mengaktifkan..." : "Aktifkan Akaun Saya Sebagai ADMIN"}
-          </button>
+          <div className="mt-6 flex flex-col gap-2">
+            <button
+              onClick={handleClaimAdmin}
+              disabled={claiming}
+              className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-slate-800 disabled:opacity-50"
+            >
+              {claiming ? "Menaik taraf..." : "⚡ Tetapkan Akaun Ini Sebagai Admin (Dev Test)"}
+            </button>
 
-          <div className="mt-4">
             <Link href="/" className="text-xs text-slate-500 hover:underline">
               Kembali ke Laman Utama
             </Link>
@@ -154,7 +156,7 @@ export function AdminDashboardView({
                 <ShieldCheck className="h-4 w-4" />
               </div>
               <span className="font-extrabold text-primary">
-                SUNNO<span className="text-slate-900">.ASIA</span>
+                MORRA<span className="text-slate-900">.ASIA</span>
               </span>
               <span className="ml-1 rounded-md bg-red-50 px-2 py-0.5 text-xs font-bold text-red-700">
                 Admin Panel
@@ -185,13 +187,13 @@ export function AdminDashboardView({
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-slate-300">
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Pusat Kawalan Superadmin Sunno (HQ)
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Pusat Kawalan Superadmin MORRA (HQ)
               </span>
               <h1 className="mt-2 text-2xl font-extrabold sm:text-3xl">
-                Pendapatan HQ & Pemantauan Peniaga
+                Pendapatan HQ & Pemantauan Ekosistem
               </h1>
               <p className="mt-1 text-xs text-slate-400">
-                Pantau kutipan yuran pendaftaran Pioneer RM512, bahagian keuntungan syarikat, dan status kelulusan kedai.
+                Pantau kutipan yuran pendaftaran Pioneer RM512, bahagian bersih Fi Platform MORRA 5%, dan status kelulusan peniaga.
               </p>
             </div>
 
@@ -205,7 +207,7 @@ export function AdminDashboardView({
                   RM {stats.totalHqRevenueRm.toFixed(2)}
                 </p>
                 <p className="mt-1 text-[10px] text-slate-400">
-                  Pioneer: RM {stats.totalPioneerFeesRm.toFixed(2)} + Komisen HQ: RM {stats.totalCompanyShareRm.toFixed(2)}
+                  Pioneer: RM {stats.totalPioneerFeesRm.toFixed(2)} + Fi MORRA HQ: RM {stats.totalCompanyShareRm.toFixed(2)}
                 </p>
               </div>
 
@@ -231,13 +233,13 @@ export function AdminDashboardView({
             <p className="text-[10px] text-emerald-600 mt-0.5">Kutipan Pendaftaran</p>
           </div>
 
-          {/* 2. Hasil Syarikat (22.5%) */}
+          {/* 2. Hasil Fi MORRA 5% */}
           <div className="rounded-2xl border border-blue-200 bg-blue-50/50 p-4 shadow-xs">
-            <span className="text-[11px] font-bold text-blue-800">Hasil HQ (22.5%)</span>
+            <span className="text-[11px] font-bold text-blue-800">Hasil Fi Platform</span>
             <p className="mt-1 text-xl font-extrabold text-blue-700">
               RM {stats.totalCompanyShareRm.toFixed(2)}
             </p>
-            <p className="text-[10px] text-blue-600 mt-0.5">Dari Pool Komisen</p>
+            <p className="text-[10px] text-blue-600 mt-0.5">Bahagian Bersih HQ (5%)</p>
           </div>
 
           {/* 3. GMV Pasaran (Jualan Peniaga) */}
@@ -264,16 +266,16 @@ export function AdminDashboardView({
             <p className="mt-1 text-xl font-extrabold text-slate-900">
               {stats.totalUsersCount}
             </p>
-            <p className="text-[10px] text-slate-400 mt-0.5">Consumer & Peniaga</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">User, Agen & Merchant</p>
           </div>
 
           {/* 6. Token Dikeluarkan */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-            <span className="text-[11px] font-semibold text-slate-500">Token Dikeluarkan</span>
+          <div className="rounded-2xl border border-purple-200 bg-purple-50/50 p-4 shadow-xs">
+            <span className="text-[11px] font-semibold text-purple-900">Token Dikeluarkan</span>
             <p className="mt-1 text-xl font-extrabold text-purple-700">
               {stats.totalTokensIssued} T
             </p>
-            <p className="text-[10px] text-purple-600 mt-0.5">Ganjaran Cashback</p>
+            <p className="text-[10px] text-purple-600 mt-0.5">Ganjaran Belanja</p>
           </div>
         </div>
 
@@ -332,7 +334,7 @@ export function AdminDashboardView({
               <div>
                 <h3 className="font-bold text-slate-900 text-base">Sejarah Transaksi Pesanan E-Commerce</h3>
                 <p className="text-xs text-slate-500">
-                  Semua transaksi belian merentas kedai dan pengguna Sunno
+                  Semua transaksi belian merentas kedai dan pengguna MORRA
                 </p>
               </div>
 
@@ -386,7 +388,7 @@ export function AdminDashboardView({
                         Tunai: RM {o.cashPaidRm.toFixed(2)} • Token: {o.tokensUsed} T
                       </p>
                       <p className="text-[10px] text-slate-400 mt-0.5">
-                        Peniaga: RM {(o.totalAmountRm - o.platformFeeRm).toFixed(2)} | HQ: RM {o.platformFeeRm.toFixed(2)}
+                        Peniaga: RM {o.merchantNetRm.toFixed(2)} | Fi MORRA 5%: RM {o.platformFeeRm.toFixed(2)} | CHIP 1%: RM {o.chipGatewayFeeRm.toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -401,7 +403,7 @@ export function AdminDashboardView({
           <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
             <h3 className="font-bold text-slate-900 text-base">Senarai & Pengesahan Peniaga (Merchants)</h3>
             <p className="text-xs text-slate-500 mb-4">
-              Kawal status pengaktifan kedai untuk paparan umum di Marketplace
+              Kawal status pengaktifan kedai untuk paparan umum di Marketplace MORRA
             </p>
 
             {merchants.length === 0 ? (
@@ -410,68 +412,75 @@ export function AdminDashboardView({
               </div>
             ) : (
               <div className="divide-y divide-slate-100 overflow-x-auto">
-                {merchants.map((m) => (
-                  <div
-                    key={m.id}
-                    className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h4 className="text-sm font-bold text-slate-900">{m.shopName}</h4>
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                            m.isActive
-                              ? "bg-emerald-100 text-emerald-800"
-                              : "bg-amber-100 text-amber-800"
-                          }`}
-                        >
-                          {m.isActive ? "Kedai Aktif" : "Belum Aktif (Pending)"}
-                        </span>
+                {merchants.map((m) => {
+                  const isPaid = m.pioneerPaymentStatus === "PAID" || m.isActive;
+                  return (
+                    <div
+                      key={m.id}
+                      className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="text-sm font-bold text-slate-900">{m.shopName}</h4>
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                              m.isActive
+                                ? "bg-emerald-100 text-emerald-800"
+                                : "bg-amber-100 text-amber-800"
+                            }`}
+                          >
+                            {m.isActive ? "Kedai Aktif" : "Belum Aktif (Pending)"}
+                          </span>
 
-                        {/* Status Bayaran Pakej Pioneer RM512 */}
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
-                            m.pioneerFeePaidRm > 0
-                              ? "bg-blue-100 text-blue-800 border border-blue-200"
-                              : "bg-slate-100 text-slate-600"
-                          }`}
-                        >
-                          {m.pioneerFeePaidRm > 0
-                            ? "Pioneer RM512: LUNAS (HQ)"
-                            : "Pioneer RM512: BELUM BAYAR"}
-                        </span>
+                          {/* Status Bayaran Pakej Pioneer RM512 (Single Source of Truth) */}
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
+                              isPaid
+                                ? "bg-blue-100 text-blue-800 border border-blue-200"
+                                : m.pioneerPaymentStatus === "PENDING"
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-slate-100 text-slate-600"
+                            }`}
+                          >
+                            {isPaid
+                              ? "Pioneer RM512: LUNAS"
+                              : m.pioneerPaymentStatus === "PENDING"
+                              ? "Pioneer RM512: MENUNGGU BAYARAN"
+                              : "Pioneer RM512: BELUM BAYAR"}
+                          </span>
+                        </div>
+
+                        <p className="mt-1 text-xs text-slate-500">
+                          Pemilik: <strong>{m.ownerName}</strong> ({m.ownerPhone || "Tiada No. Tel"}) • Slug: <code>morra.asia/{m.slug}</code>
+                        </p>
                       </div>
 
-                      <p className="mt-1 text-xs text-slate-500">
-                        Pemilik: <strong>{m.ownerName}</strong> ({m.ownerPhone || "Tiada No. Tel"}) • Slug: <code>sunno.asia/{m.slug}</code>
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleToggleMerchant(m.id, m.isActive)}
+                          disabled={updatingId === m.id}
+                          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition disabled:opacity-50 ${
+                            m.isActive
+                              ? "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+                              : "bg-emerald-600 text-white hover:bg-emerald-700"
+                          }`}
+                        >
+                          {m.isActive ? (
+                            <>
+                              <XCircle className="h-3.5 w-3.5" />
+                              Nyahaktifkan
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              Luluskan (Aktifkan)
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleToggleMerchant(m.id, m.isActive)}
-                        disabled={updatingId === m.id}
-                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition disabled:opacity-50 ${
-                          m.isActive
-                            ? "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
-                            : "bg-emerald-600 text-white hover:bg-emerald-700"
-                        }`}
-                      >
-                        {m.isActive ? (
-                          <>
-                            <XCircle className="h-3.5 w-3.5" />
-                            Nyahaktifkan
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                            Luluskan (Aktifkan)
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -482,7 +491,7 @@ export function AdminDashboardView({
           <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
             <h3 className="font-bold text-slate-900 text-base">Senarai Pengguna & Penaja Rangkaian</h3>
             <p className="text-xs text-slate-500 mb-4">
-              Urus peranan pengguna dan pantau pautan penaja
+              Urus peranan pengguna (USER, AGEN_PROMOTER, MERCHANT, ADMIN)
             </p>
 
             <div className="divide-y divide-slate-100 overflow-x-auto">
@@ -501,6 +510,8 @@ export function AdminDashboardView({
                           className={`rounded px-2 py-0.5 text-[10px] font-bold ${
                             u.role === "ADMIN"
                               ? "bg-red-100 text-red-800"
+                              : u.role === "AGEN_PROMOTER"
+                              ? "bg-purple-100 text-purple-800"
                               : u.role === "MERCHANT"
                               ? "bg-blue-100 text-blue-800"
                               : "bg-slate-100 text-slate-700"
@@ -528,12 +539,13 @@ export function AdminDashboardView({
                         onChange={(e) =>
                           handleChangeRole(
                             u.id,
-                            e.target.value as "CONSUMER" | "MERCHANT" | "ADMIN"
+                            e.target.value as "USER" | "AGEN_PROMOTER" | "MERCHANT" | "ADMIN"
                           )
                         }
                         className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700 outline-none"
                       >
-                        <option value="CONSUMER">CONSUMER</option>
+                        <option value="USER">USER</option>
+                        <option value="AGEN_PROMOTER">AGEN_PROMOTER</option>
                         <option value="MERCHANT">MERCHANT</option>
                         <option value="ADMIN">ADMIN</option>
                       </select>
@@ -550,13 +562,13 @@ export function AdminDashboardView({
           <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-xs sm:p-8">
             <div className="flex items-center gap-2 text-primary font-bold text-base">
               <Settings className="h-5 w-5" />
-              Tetapan Dasar Ekosistem SUNNO.ASIA
+              Tetapan Dasar Ekosistem MORRA.ASIA Fasa 1
             </div>
             <p className="mt-1 text-xs text-slate-500">
-              Parameter rasmi pengiraan lejar token, komisen 3-tier, dan caj platform
+              Parameter rasmi pengiraan lejar token, komisen 2-Level berasaskan Fi Platform 5%, dan caj gateway
             </p>
 
-            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="rounded-xl border border-slate-200 p-4">
                 <span className="text-xs font-bold text-primary flex items-center gap-1">
                   <Coins className="h-4 w-4" /> Syarat & Ganjaran Token
@@ -565,25 +577,37 @@ export function AdminDashboardView({
                   RM 1.00 Tunai = 1 Token
                 </p>
                 <p className="mt-1 text-xs text-slate-500">
-                  Kadar tebusan: 1 Token = RM1.00 diskaun semasa checkout. Token disimpan dalam lejar khas berasingan.
+                  Konsep rasmi: Belanja → Kumpul Token → Tebus Diskaun semasa checkout. Token disimpan dalam lejar khas berasingan.
                 </p>
               </div>
 
               <div className="rounded-xl border border-slate-200 p-4">
                 <span className="text-xs font-bold text-purple-700 flex items-center gap-1">
-                  <Layers className="h-4 w-4" /> Commission Pool Platform
+                  <Layers className="h-4 w-4" /> Fi Platform MORRA & Komisen
                 </span>
                 <p className="mt-2 text-sm font-extrabold text-slate-900">
-                  10.0% Daripada Tunai Pesanan
+                  5.0% Fi Platform (Tiada L3)
                 </p>
                 <p className="mt-1 text-xs text-slate-500">
-                  Agihan rasmi: L1 (50%), L2 (15%), L3 (12.5%), Syarikat (22.5%).
+                  Agihan rasmi: Senario A (Agen L1 50%, MORRA 50%), Senario B (Merchant L1 50%, Agen L2 10%, MORRA 40%), Senario C (Merchant L1 50%, MORRA 50%).
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 p-4">
+                <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
+                  <DollarSign className="h-4 w-4" /> Caj CHIP Gateway
+                </span>
+                <p className="mt-2 text-sm font-extrabold text-slate-900">
+                  1.0% (Min RM0.15, Max RM1.50)
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Terpisah sepenuhnya daripada Fi 5% MORRA. Jumlah potongan asas ~6%, baki asas hak peniaga ~94%.
                 </p>
               </div>
             </div>
 
             <div className="mt-6 rounded-xl bg-slate-50 p-4 text-xs text-slate-600">
-              ℹ️ Parameter ini dikawal secara automatik melalui fail konfigurasi <code>src/lib/commission.ts</code> bagi memastikan ketelusan audit lejar.
+              ℹ️ Parameter ini dikawal secara dinamik melalui jadual <code>system_configs</code> dan modul <code>src/lib/commission.ts</code> bagi memastikan ketelusan audit lejar.
             </div>
           </div>
         )}

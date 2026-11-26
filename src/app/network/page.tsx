@@ -13,6 +13,7 @@ export default async function NetworkPage() {
     <NetworkView
       user={data.user}
       profile={data.profile}
+      isUserRestricted={data.isUserRestricted}
       referralLink={data.referralLink}
       referralCode={data.referralCode}
       totalCommissionsRm={data.totalCommissionsRm}
@@ -20,10 +21,8 @@ export default async function NetworkPage() {
       paidCommissionsRm={data.paidCommissionsRm}
       l1Count={data.l1Count}
       l2Count={data.l2Count}
-      l3Count={data.l3Count}
       members={data.members}
       commissions={data.commissions}
     />
   );
 }
-

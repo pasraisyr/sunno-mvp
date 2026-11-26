@@ -31,12 +31,18 @@ export async function getMerchantDashboardData(isPaidRedirect?: boolean) {
     .maybeSingle();
 
   // JIKA PATAH BALIK DARI CHIP DENGAN STATUS ?paid=true
-  if (isPaidRedirect && merchant && !merchant.is_active) {
+  if (isPaidRedirect && merchant && merchant.pioneer_payment_status !== "PAID") {
     await supabase
       .from("merchants")
-      .update({ is_active: true })
+      .update({
+        is_active: true,
+        pioneer_payment_status: "PAID",
+        pioneer_paid_at: new Date().toISOString(),
+      })
       .eq("id", merchant.id);
+
     merchant.is_active = true;
+    merchant.pioneer_payment_status = "PAID";
   }
 
   // Jika kedai wujud, ambil senarai produk kedai ini
@@ -81,6 +87,8 @@ export async function saveMerchantShopAction(formData: {
   slug: string;
   description: string;
   address: string;
+  tokenDiscountEnabled?: boolean;
+  maxTokenDiscountPercent?: number;
 }) {
   const supabase = await getSupabaseServerClient();
   const {
@@ -111,6 +119,8 @@ export async function saveMerchantShopAction(formData: {
         slug: cleanSlug,
         description: formData.description,
         address: formData.address,
+        token_discount_enabled: formData.tokenDiscountEnabled ?? false,
+        max_token_discount_percent: formData.maxTokenDiscountPercent ?? 0,
       })
       .eq("id", existing.id);
 
@@ -122,7 +132,10 @@ export async function saveMerchantShopAction(formData: {
       slug: cleanSlug,
       description: formData.description,
       address: formData.address,
-      is_active: false, // Perlu bayar RM512 untuk aktif
+      is_active: false,
+      pioneer_payment_status: "UNPAID",
+      token_discount_enabled: formData.tokenDiscountEnabled ?? false,
+      max_token_discount_percent: formData.maxTokenDiscountPercent ?? 0,
     });
 
     if (error) return { error: error.message };
@@ -180,16 +193,24 @@ export async function payPioneerPackageAction(merchantId: string) {
   if (!user) return { error: "Sesi tidak sah." };
 
   try {
+    // Set status PENDING di pangkalan data
+    await supabase
+      .from("merchants")
+      .update({ pioneer_payment_status: "PENDING" })
+      .eq("id", merchantId);
+
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
     // Bina sesi bayaran CHIP
     const purchase = await createChipPurchase({
-      orderId: `PIONEER-${merchantId.slice(0, 8)}`,
-      customerEmail: user.email || "merchant@sunno.asia",
+      orderId: `PIONEER_${merchantId}`,
+      customerEmail: user.email || "merchant@morra.asia",
       customerName: user.user_metadata?.full_name || "Pioneer Merchant",
-      productTitle: "Pakej Pioneer Merchant Sunno.asia (Setup Fee)",
+      productTitle: "Pakej Pioneer Merchant MORRA.ASIA (Setup Fee)",
       amountInRm: 512.0,
-      successRedirectUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/merchant/dashboard?paid=true`,
-      failureRedirectUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/merchant/dashboard?paid=false`,
-      webhookCallbackUrl: "https://sunno.asia/api/webhooks/chip",
+      successRedirectUrl: `${siteUrl}/merchant/dashboard?paid=true`,
+      failureRedirectUrl: `${siteUrl}/merchant/dashboard?paid=false`,
+      webhookCallbackUrl: `${siteUrl}/api/webhooks/chip`,
     });
 
     return { checkoutUrl: purchase.checkout_url };
@@ -199,7 +220,7 @@ export async function payPioneerPackageAction(merchantId: string) {
   }
 }
 
-// 6. Kemas kini status pesanan (contoh: PENDING -> PAID -> COMPLETED)
+// 6. Kemas kini status pesanan
 export async function updateOrderStatusAction(
   orderId: string,
   newStatus: "PENDING" | "PAID" | "CANCELLED" | "COMPLETED"

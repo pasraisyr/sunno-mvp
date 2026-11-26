@@ -8,7 +8,7 @@ export async function registerUserAction(formData: {
   password: string;
   fullName: string;
   phoneNumber: string;
-  role: "CONSUMER" | "MERCHANT";
+  role: "USER" | "MERCHANT" | "AGEN_PROMOTER";
   sponsorId?: string;
 }) {
   const supabase = await getSupabaseServerClient();
@@ -29,41 +29,49 @@ export async function registerUserAction(formData: {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  // Semak jika sponsorId sah
+  // Semak jika sponsorId sah & periksa role penaja
   let validSponsorId: string | null = null;
+  let sponsorRole: string | null = null;
+
   if (formData.sponsorId) {
     const { data: sponsorProfile } = await supabaseAdmin
       .from("profiles")
-      .select("id")
+      .select("id, role")
       .eq("id", formData.sponsorId)
       .maybeSingle();
 
     if (sponsorProfile) {
       validSponsorId = sponsorProfile.id;
+      sponsorRole = sponsorProfile.role;
     }
   }
 
-  // 2. Simpan rekod ke dalam jadual profiles
+  // 2. Simpan rekod ke dalam jadual profiles (Role: USER, MERCHANT, AGEN_PROMOTER)
   const { error: profileError } = await supabaseAdmin.from("profiles").insert({
     id: newUserId,
     full_name: formData.fullName,
     phone_number: formData.phoneNumber,
     role: formData.role,
     sponsor_id: validSponsorId,
+    referred_by_id: validSponsorId,
+    referred_by_role: sponsorRole,
   });
 
   if (profileError) {
     return { error: `Gagal mencipta profil: ${profileError.message}` };
   }
 
-  // 3. PEMETAAN AUTOMATIK 3-TIER KE DALAM 'network_trees'
-  if (validSponsorId) {
+  // 3. PEMETAAN 2-LEVEL KE DALAM 'network_trees' (TIADA L3 & TIADA DOWNLINE ANTARA AGEN)
+  // Peraturan: Agen Promoter tidak membina downline sesama agen
+  const isAgentToAgent = formData.role === "AGEN_PROMOTER" && sponsorRole === "AGEN_PROMOTER";
+
+  if (validSponsorId && !isAgentToAgent) {
     const treeRows: Array<{
       user_id: string;
       ancestor_id: string;
-      tier: "L1" | "L2" | "L3";
+      tier: "L1" | "L2";
     }> = [
-      // L1: Penaja Terus
+      // L1: Perujuk Terus
       {
         user_id: newUserId,
         ancestor_id: validSponsorId,
@@ -79,9 +87,7 @@ export async function registerUserAction(formData: {
 
     if (sponsorTrees) {
       const sponsorL1 = sponsorTrees.find((t) => t.tier === "L1");
-      const sponsorL2 = sponsorTrees.find((t) => t.tier === "L2");
-
-      // Jika ada L1 bagi penaja -> menjadi L2 bagi ahli baru
+      // Hanya masukkan L2 (Tiada L3!)
       if (sponsorL1) {
         treeRows.push({
           user_id: newUserId,
@@ -89,19 +95,31 @@ export async function registerUserAction(formData: {
           tier: "L2",
         });
       }
-
-      // Jika ada L2 bagi penaja -> menjadi L3 bagi ahli baru
-      if (sponsorL2) {
-        treeRows.push({
-          user_id: newUserId,
-          ancestor_id: sponsorL2.ancestor_id,
-          tier: "L3",
-        });
-      }
     }
 
-    // Masukkan ke dalam jadual network_trees
-    await supabaseAdmin.from("network_trees").insert(treeRows);
+    // Masukkan ke dalam jadual network_trees (mengabaikan konflik jika ada)
+    await supabaseAdmin.from("network_trees").upsert(treeRows, {
+      onConflict: "user_id,ancestor_id",
+      ignoreDuplicates: true,
+    });
+  }
+
+  // 4. Jika mendaftar sebagai MERCHANT, automatik cipta rekod placeholder di jadual merchants
+  if (formData.role === "MERCHANT") {
+    const slug = formData.fullName
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "") + "-" + newUserId.slice(0, 4);
+
+    await supabaseAdmin.from("merchants").insert({
+      user_id: newUserId,
+      shop_name: `Kedai ${formData.fullName}`,
+      slug,
+      is_active: false,
+      pioneer_payment_status: "UNPAID",
+      referred_by_promoter_id: sponsorRole === "AGEN_PROMOTER" ? validSponsorId : null,
+    });
   }
 
   return { success: true, role: formData.role };
@@ -131,9 +149,11 @@ export async function loginUserAction(formData: {
     .eq("id", authData.user.id)
     .single();
 
+  const userRole = (profile?.role as "USER" | "AGEN_PROMOTER" | "MERCHANT" | "ADMIN") || "USER";
+
   return {
     success: true,
-    role: (profile?.role as "CONSUMER" | "MERCHANT" | "ADMIN") || "CONSUMER",
+    role: userRole,
   };
 }
 

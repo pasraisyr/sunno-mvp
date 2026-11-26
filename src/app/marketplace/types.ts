@@ -18,6 +18,8 @@ export interface ProductItem {
     shop_name: string;
     slug: string;
     is_active: boolean;
+    token_discount_enabled?: boolean;
+    max_token_discount_percent?: number;
   };
   categories?: {
     id: string;
@@ -35,7 +37,7 @@ export interface MarketplaceViewProps {
   profile?: {
     id: string;
     fullName: string;
-    role: "CONSUMER" | "MERCHANT" | "ADMIN";
+    role: "USER" | "AGEN_PROMOTER" | "MERCHANT" | "ADMIN" | string;
   } | null;
   products: ProductItem[];
   categories: CategoryItem[];
@@ -45,4 +47,3 @@ export interface MarketplaceViewProps {
     cash_paid_rm: number | string;
   } | null;
 }
-

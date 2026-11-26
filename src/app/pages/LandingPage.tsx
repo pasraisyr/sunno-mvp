@@ -11,7 +11,7 @@ export interface LandingPageProps {
   profile?: {
     id: string;
     fullName: string;
-    role: "CONSUMER" | "MERCHANT" | "ADMIN";
+    role: "USER" | "AGEN_PROMOTER" | "MERCHANT" | "ADMIN" | string;
   } | null;
 }
 

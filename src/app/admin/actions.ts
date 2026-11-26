@@ -35,14 +35,15 @@ export async function getAdminDashboardDataAction() {
 
   const isAdmin = myProfile?.role === "ADMIN";
 
-  // 1. Ambil semua Merchant
+  // 1. Ambil semua Merchant (Single source of truth: pioneer_payment_status & is_active)
   const { data: merchantsData } = await supabaseAdmin
     .from("merchants")
-    .select("id, shop_name, slug, is_active, created_at, profiles(full_name, phone_number)")
+    .select("id, shop_name, slug, is_active, pioneer_payment_status, created_at, profiles(full_name, phone_number)")
     .order("created_at", { ascending: false });
 
   const merchants: AdminMerchantItem[] = (merchantsData || []).map((m) => {
     const p = m.profiles as unknown as ProfileJoin;
+    const isPaid = m.pioneer_payment_status === "PAID" || m.is_active;
     return {
       id: m.id,
       shopName: m.shop_name,
@@ -50,7 +51,8 @@ export async function getAdminDashboardDataAction() {
       ownerName: p?.full_name || "Peniaga",
       ownerPhone: p?.phone_number || null,
       isActive: m.is_active,
-      pioneerFeePaidRm: m.is_active ? 512.0 : 0.0,
+      pioneerPaymentStatus: m.pioneer_payment_status || (m.is_active ? "PAID" : "UNPAID"),
+      pioneerFeePaidRm: isPaid ? 512.0 : 0.0,
       createdAt: m.created_at,
     };
   });
@@ -71,7 +73,7 @@ export async function getAdminDashboardDataAction() {
     id: u.id,
     fullName: u.full_name,
     phoneNumber: u.phone_number,
-    role: u.role,
+    role: u.role || "USER",
     sponsorName: u.sponsor_id ? userMap.get(u.sponsor_id) || "Penaja ID: " + u.sponsor_id.slice(0, 6) : null,
     createdAt: u.created_at,
   }));
@@ -79,44 +81,55 @@ export async function getAdminDashboardDataAction() {
   // 3. Ambil semua Pesanan Transaksi
   const { data: ordersData } = await supabaseAdmin
     .from("orders")
-    .select("id, total_amount_rm, tokens_used, cash_paid_rm, platform_fee_rm, merchant_net_rm, status, created_at, profiles(full_name), merchants(shop_name)")
+    .select("id, total_amount_rm, gross_amount, tokens_used, cash_paid_rm, chip_gateway_fee, platform_fee_rm, morra_platform_fee, morra_net_revenue, merchant_net_rm, merchant_net_amount, status, created_at, profiles(full_name), merchants(shop_name)")
     .order("created_at", { ascending: false });
 
   const orders: AdminOrderItem[] = (ordersData || []).map((o) => {
     const prof = o.profiles as unknown as { full_name?: string };
     const merch = o.merchants as unknown as { shop_name?: string };
+    const totalAmt = Number(o.gross_amount || o.total_amount_rm || 0);
+    const feeAmt = Number(o.morra_platform_fee || o.platform_fee_rm || 0);
+    const chipFee = Number(o.chip_gateway_fee || 0);
+    const netAmt = Number(o.merchant_net_amount || o.merchant_net_rm || (totalAmt - feeAmt - chipFee));
+
     return {
       id: o.id,
       customerName: prof?.full_name || "Pelanggan",
       shopName: merch?.shop_name || "Kedai",
-      totalAmountRm: Number(o.total_amount_rm),
-      tokensUsed: Number(o.tokens_used),
-      cashPaidRm: Number(o.cash_paid_rm),
-      platformFeeRm: Number(o.platform_fee_rm || 0),
-      merchantNetRm: Number(o.merchant_net_rm || 0),
+      totalAmountRm: totalAmt,
+      tokensUsed: Number(o.tokens_used || 0),
+      cashPaidRm: Number(o.cash_paid_rm || 0),
+      platformFeeRm: feeAmt,
+      chipGatewayFeeRm: chipFee,
+      merchantNetRm: netAmt,
       status: o.status,
       createdAt: o.created_at,
     };
   });
 
-  // 4. Statistik Kewangan Bersih HQ & Ekosistem
-  const totalActiveMerchants = merchants.filter((m) => m.isActive).length;
+  // 4. Statistik Kewangan Bersih HQ & Ekosistem MORRA Fasa 1
+  const paidMerchants = merchants.filter((m) => m.pioneerPaymentStatus === "PAID" || m.isActive);
+  const totalActiveMerchants = paidMerchants.length;
 
-  // A. Kutipan Yuran Pioneer RM512 (Hasil Lesen / Pendaftaran Peniaga ke HQ)
+  // A. Kutipan Yuran Pioneer RM512
   const totalPioneerFeesRm = totalActiveMerchants * 512.0;
 
-  // B. Nilai Kasar Transaksi Pasaran (GMV - Jualan Peniaga di Marketplace)
+  // B. Nilai Kasar Transaksi Pasaran (GMV)
   const paidOrders = orders.filter((o) => o.status === "PAID" || o.status === "COMPLETED");
   const totalGmvRm = paidOrders.reduce((sum, o) => sum + o.totalAmountRm, 0);
 
-  // C. Bahagian Syarikat (22.5% daripada 10% Pool komisen transaksi + Caj Platform)
-  const totalCompanyShareRm = paidOrders.reduce((sum, o) => {
-    const commissionPool = o.cashPaidRm * 0.1;
-    const companyPoolShare = commissionPool * 0.225;
-    return sum + companyPoolShare + o.platformFeeRm;
-  }, 0);
+  // C. Bahagian Bersih MORRA daripada Fi Platform 5%
+  // Ambil daripada orders.morra_net_revenue jika ada, atau anggaran baki fi
+  const totalCompanyShareRm = (ordersData || [])
+    .filter((o) => o.status === "PAID" || o.status === "COMPLETED")
+    .reduce((sum, o) => {
+      const morraNet = o.morra_net_revenue !== null && o.morra_net_revenue !== undefined
+        ? Number(o.morra_net_revenue)
+        : Number(o.morra_platform_fee || o.platform_fee_rm || 0);
+      return sum + morraNet;
+    }, 0);
 
-  // D. Jumlah Pendapatan Bersih HQ (Pioneer Fees + Bahagian Syarikat)
+  // D. Jumlah Pendapatan Bersih HQ (Pioneer Fees + Fi MORRA)
   const totalHqRevenueRm = totalPioneerFeesRm + totalCompanyShareRm;
 
   // Kira jumlah token yang telah dikeluarkan
@@ -149,7 +162,7 @@ export async function getAdminDashboardDataAction() {
   };
 }
 
-// Tindakan 1: Luluskan atau Nyahaktifkan Merchant
+// Tindakan 1: Luluskan atau Nyahaktifkan Merchant (Penyelarasan Status Tunggal)
 export async function toggleMerchantStatusAction(merchantId: string, newActiveStatus: boolean) {
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -158,7 +171,10 @@ export async function toggleMerchantStatusAction(merchantId: string, newActiveSt
 
   const { error } = await supabaseAdmin
     .from("merchants")
-    .update({ is_active: newActiveStatus })
+    .update({
+      is_active: newActiveStatus,
+      pioneer_payment_status: newActiveStatus ? "PAID" : "REVOKED",
+    })
     .eq("id", merchantId);
 
   if (error) return { error: error.message };
@@ -167,10 +183,10 @@ export async function toggleMerchantStatusAction(merchantId: string, newActiveSt
   return { success: true };
 }
 
-// Tindakan 2: Kemas Kini Peranan Pengguna (Role)
+// Tindakan 2: Kemas Kini Peranan Pengguna (Role: ADMIN, AGEN_PROMOTER, MERCHANT, USER)
 export async function updateUserRoleAction(
   targetUserId: string,
-  newRole: "CONSUMER" | "MERCHANT" | "ADMIN"
+  newRole: "USER" | "AGEN_PROMOTER" | "MERCHANT" | "ADMIN"
 ) {
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -212,4 +228,3 @@ export async function claimAdminRoleAction() {
   revalidatePath("/admin");
   return { success: true };
 }
-

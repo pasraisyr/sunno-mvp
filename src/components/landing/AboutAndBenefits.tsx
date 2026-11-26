@@ -1,34 +1,34 @@
-import { CheckCircle2, ShoppingBag, Store, Sparkles } from "lucide-react";
+import { CheckCircle2, ShoppingBag, Store } from "lucide-react";
 
 const merchantBenefits = [
-  "Kedai digital sendiri (contoh: sunno.asia/kedai-anda) siap dalam beberapa minit.",
+  "Kedai digital sendiri (contoh: morra.asia/kedai-anda) siap dalam beberapa minit.",
   "Terima bayaran FPX & Kad secara automatik melalui integrasi CHIP.",
-  "Tarik pelanggan berulang melalui ekosistem ganjaran Token Sunno.",
-  "Pasarkan produk anda melalui jaringan komuniti & perujuk (Networkers) aktif.",
+  "Kawal diskaun Token mengikut margin keuntungan kedai anda secara bebas.",
+  "Tarik pelanggan baharu melalui jaringan Agen Promoter berdaftar MORRA.",
 ];
 
 const customerBenefits = [
-  "Kumpul 1 Token bagi setiap RM1.00 tunai yang dibelanjakan di kedai rakan niaga.",
-  "Tebus Token untuk diskaun pembelian seterusnya di dalam ekosistem Sunno.",
-  "Jana pendapatan sampingan melalui komisen 3-Tier (L1, L2, L3) bila berkongsi pautan.",
-  "Sokong perniagaan tempatan dengan transaksi yang selamat dan telus.",
+  "Kumpul 1 Token bagi setiap RM1.00 tunai yang dibelanjakan di Marketplace.",
+  "Tebus Token untuk potongan diskaun belian seterusnya di kedai rakan niaga.",
+  "Token disimpan selamat dalam lejar berasingan tanpa luput tempoh.",
+  "Sokong perniagaan tempatan dengan transaksi yang disahkan selamat melalui CHIP.",
 ];
 
 export function AboutAndBenefits() {
   return (
     <div className="space-y-20 py-16 md:py-24">
-      {/* SEKSYEN 1: What is Sunno? */}
-      <section id="what-is-sunno" className="mx-auto max-w-6xl px-4 sm:px-6">
+      {/* SEKSYEN 1: What is MORRA? */}
+      <section id="what-is-morra" className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="rounded-3xl bg-primary px-6 py-12 text-center text-white sm:px-12 md:py-16">
           <h2 className="mt-4 text-2xl font-extrabold sm:text-4xl">
-            What is Sunno? — Ekosistem Digital Perniagaan Tempatan
+            What is MORRA? — Ekosistem Digital Perniagaan Tempatan
           </h2>
           <p className="mx-auto mt-4 max-w-3xl text-base leading-relaxed text-blue-100 sm:text-lg">
-            <strong>SUNNO.ASIA</strong> ialah platform e-dagang dan kesetiaan komuniti
+            <strong>MORRA.ASIA</strong> ialah platform e-dagang dan kesetiaan komuniti
             yang direka khas untuk membantu usahawan tempatan mendigitalkan kedai mereka,
-            memberi ganjaran <strong>Token</strong> kepada pembeli setiap kali berbelanja,
-            dan mengagihkan keuntungan pemasaran kepada komuniti melalui sistem{" "}
-            <strong>3-Tier Referral</strong> yang adil.
+            memberi ganjaran <strong>Token</strong> kepada pembeli setiap kali berbelanja
+            (Belanja → Kumpul Token → Tebus Diskaun),
+            dan mengagihkan komisen telus berasaskan <strong>Fi Platform 5%</strong> melalui struktur 2-Level yang adil.
           </p>
         </div>
       </section>
@@ -48,7 +48,7 @@ export function AboutAndBenefits() {
               For Merchants (Kelebihan Peniaga)
             </h3>
             <p className="mt-2 text-sm text-slate-600">
-              Tingkatkan jualan kedai anda tanpa kos iklan bulanan yang membebankan.
+              Tingkatkan jualan kedai anda dengan ekosistem digital tanpa kos tersembunyi.
             </p>
             <ul className="mt-6 space-y-3.5">
               {merchantBenefits.map((item) => (
@@ -75,7 +75,7 @@ export function AboutAndBenefits() {
               For Customers (Kelebihan Pengguna)
             </h3>
             <p className="mt-2 text-sm text-slate-600">
-              Berbelanja seperti biasa di kedai tempatan, tetapi nikmati pulangan berganda.
+              Berbelanja seperti biasa di kedai tempatan dan kumpul ganjaran diskaun berterusan.
             </p>
             <ul className="mt-6 space-y-3.5">
               {customerBenefits.map((item) => (

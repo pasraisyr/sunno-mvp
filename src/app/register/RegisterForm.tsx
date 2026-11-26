@@ -3,17 +3,23 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Store, User, ShoppingBag, Sparkles } from "lucide-react";
+import { Store, ShoppingBag, Sparkles, Megaphone } from "lucide-react";
 import { registerUserAction } from "@/app/auth/actions";
 
 export function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const refCode = searchParams.get("ref") || "";
-  const defaultRole =
-    searchParams.get("role") === "MERCHANT" ? "MERCHANT" : "CONSUMER";
+  const roleParam = searchParams.get("role");
 
-  const [role, setRole] = useState<"CONSUMER" | "MERCHANT">(defaultRole);
+  const initialRole: "USER" | "MERCHANT" | "AGEN_PROMOTER" =
+    roleParam === "MERCHANT"
+      ? "MERCHANT"
+      : roleParam === "AGEN_PROMOTER"
+      ? "AGEN_PROMOTER"
+      : "USER";
+
+  const [role, setRole] = useState<"USER" | "MERCHANT" | "AGEN_PROMOTER">(initialRole);
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
@@ -45,6 +51,8 @@ export function RegisterForm() {
     // Bawa ke halaman mengikut peranan (role)
     if (result.role === "MERCHANT") {
       router.push("/merchant/dashboard");
+    } else if (result.role === "AGEN_PROMOTER") {
+      router.push("/network");
     } else {
       router.push("/marketplace");
     }
@@ -59,7 +67,7 @@ export function RegisterForm() {
             <Store className="h-5 w-5" />
           </div>
           <span className="text-xl font-extrabold text-primary">
-            SUNNO<span className="text-slate-900">.ASIA</span>
+            MORRA<span className="text-slate-900">.ASIA</span>
           </span>
         </Link>
 
@@ -67,44 +75,64 @@ export function RegisterForm() {
           Daftar Akaun Baru
         </h1>
         <p className="mt-1 text-center text-sm text-slate-600">
-          Pilih jenis akaun anda untuk mula menggunakan ekosistem Sunno
+          Pilih jenis akaun anda untuk mula menggunakan ekosistem MORRA
         </p>
 
         {/* Lencana Rujukan (Jika mendaftar melalui referral link) */}
         {refCode && (
           <div className="mt-4 flex items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/80 p-2.5 text-xs font-semibold text-primary">
             <Sparkles className="h-3.5 w-3.5" />
-            <span>Mendaftar melalui jemputan penaja rangkaian Sunno</span>
+            <span>Mendaftar melalui jemputan penaja rangkaian MORRA</span>
           </div>
         )}
 
-        {/* Pilihan Role: Pengguna vs Peniaga */}
-        <div className="mt-6 grid grid-cols-2 gap-3">
+        {/* Pilihan 3 Role Rasmi MORRA */}
+        <div className="mt-6 grid grid-cols-3 gap-2">
           <button
             type="button"
-            onClick={() => setRole("CONSUMER")}
-            className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-sm font-semibold transition ${
-              role === "CONSUMER"
+            onClick={() => setRole("USER")}
+            className={`flex flex-col items-center gap-1 rounded-xl border p-2.5 text-xs font-semibold transition ${
+              role === "USER"
                 ? "border-primary bg-blue-50 text-primary"
                 : "border-slate-200 text-slate-600 hover:bg-slate-50"
             }`}
           >
-            <ShoppingBag className="h-5 w-5" />
+            <ShoppingBag className="h-4 w-4" />
             Pengguna
           </button>
 
           <button
             type="button"
             onClick={() => setRole("MERCHANT")}
-            className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-sm font-semibold transition ${
+            className={`flex flex-col items-center gap-1 rounded-xl border p-2.5 text-xs font-semibold transition ${
               role === "MERCHANT"
                 ? "border-primary bg-blue-50 text-primary"
                 : "border-slate-200 text-slate-600 hover:bg-slate-50"
             }`}
           >
-            <User className="h-5 w-5" />
-            Peniaga (Merchant)
+            <Store className="h-4 w-4" />
+            Peniaga
           </button>
+
+          <button
+            type="button"
+            onClick={() => setRole("AGEN_PROMOTER")}
+            className={`flex flex-col items-center gap-1 rounded-xl border p-2.5 text-xs font-semibold transition ${
+              role === "AGEN_PROMOTER"
+                ? "border-primary bg-blue-50 text-primary"
+                : "border-slate-200 text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            <Megaphone className="h-4 w-4" />
+            Agen Promoter
+          </button>
+        </div>
+
+        {/* Penerangan Ringkas Peranan yang Dipilih */}
+        <div className="mt-2 text-center text-[11px] text-slate-500">
+          {role === "USER" && "Beli-belah di Marketplace, kumpul Token & tebus diskaun."}
+          {role === "MERCHANT" && "Buka kedai, jual produk & sertai Pakej Pioneer RM512."}
+          {role === "AGEN_PROMOTER" && "Daftarkan merchant baharu & raih komisen 2-Level MORRA."}
         </div>
 
         {errorMsg && (
@@ -123,7 +151,7 @@ export function RegisterForm() {
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="Contoh: Ahmad Albab"
+              placeholder="Contoh: Muhammad Ali bin Ahmad"
               className="mt-1 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-primary"
             />
           </div>
@@ -176,18 +204,14 @@ export function RegisterForm() {
             disabled={loading}
             className="w-full rounded-xl bg-primary py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-900 disabled:opacity-50"
           >
-            {loading
-              ? "Sedang Mendaftar..."
-              : role === "MERCHANT"
-              ? "Daftar Sebagai Peniaga"
-              : "Daftar Sebagai Pengguna"}
+            {loading ? "Mendaftar Akaun..." : "Daftar Akaun"}
           </button>
         </form>
 
         <p className="mt-6 text-center text-xs text-slate-600">
           Sudah mempunyai akaun?{" "}
           <Link href="/login" className="font-bold text-primary hover:underline">
-            Log Masuk di sini
+            Log Masuk
           </Link>
         </p>
       </div>

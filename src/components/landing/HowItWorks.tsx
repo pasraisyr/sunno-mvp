@@ -2,7 +2,7 @@ const steps = [
   {
     step: "01",
     title: "Peniaga Buka Kedai Digital",
-    desc: "Peniaga mendaftar sebagai Pioneer Merchant dan memuat naik senarai produk atau servis mereka di Sunno.asia.",
+    desc: "Peniaga mendaftar sebagai Pioneer Merchant dan menyenaraikan produk atau servis mereka di MORRA.ASIA.",
   },
   {
     step: "02",
@@ -11,13 +11,13 @@ const steps = [
   },
   {
     step: "03",
-    title: "Terima Token (RM1 = 1 Token)",
-    desc: "Sebaik sahaja bayaran disahkan (PAID), pelanggan menerima ganjaran Token secara automatik di dalam lejar Token mereka.",
+    title: "Kumpul Token (RM1 = 1 Token)",
+    desc: "Sebaik sahaja bayaran disahkan (PAID), pelanggan menerima ganjaran Token secara automatik untuk ditebus pada pembelian seterusnya.",
   },
   {
     step: "04",
-    title: "Agihan Komisen 3-Tier",
-    desc: "Sistem mengira dan mengagihkan komisen secara automatik kepada penaja L1 (50%), L2 (15%), dan L3 (12.5%).",
+    title: "Agihan Komisen 2-Level (Fi 5%)",
+    desc: "Sistem mengagihkan bahagian komisen daripada Fi Platform 5% kepada Agen Promoter dan Merchant mengikut senario transaksi rasmi.",
   },
 ];
 
@@ -30,10 +30,10 @@ export function HowItWorks() {
             Aliran Ekosistem
           </p>
           <h2 className="mt-2 text-2xl font-extrabold text-slate-900 sm:text-4xl">
-            How Sunno Works (Visual Aliran Perniagaan)
+            How MORRA Works (Visual Aliran Perniagaan)
           </h2>
           <p className="mt-3 text-sm text-slate-600 sm:text-base">
-            4 langkah mudah bagaimana transaksi di Sunno.asia memberi manfaat kepada semua pihak.
+            4 langkah mudah bagaimana transaksi di MORRA.ASIA memberi manfaat kepada semua pihak.
           </p>
         </div>
 

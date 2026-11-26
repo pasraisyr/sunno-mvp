@@ -26,18 +26,25 @@ const supabaseAdmin = createClient(supabaseUrl, serviceKey);
 
 // Ambil argumen dari terminal: node scripts/create-admin.mjs [email] [password] [fullName] [phoneNumber]
 const args = process.argv.slice(2);
-const email = args[0] || "admin@sunno.asia";
-const password = args[1] || "Password123!";
-const fullName = args[2] || "Sunno Superadmin (HQ)";
-const phoneNumber = args[3] || "0123456789";
+const email = args[0] || process.env.ADMIN_SEED_EMAIL;
+const password = args[1] || process.env.ADMIN_SEED_PASSWORD;
+const fullName = args[2] || "MORRA Superadmin (HQ)";
+const phoneNumber = args[3] || "01XXXXXXXX";
+
+if (!email || !password) {
+  console.log(`\n❌ Ralat: Sila berikan emel dan kata laluan.`);
+  console.log(`   Penggunaan: node scripts/create-admin.mjs <emel> <kata-laluan> [nama_penuh] [no_telefon]`);
+  console.log(`   Contoh:     node scripts/create-admin.mjs admin@example.com RahsiaKukuh123! "MORRA Admin" "0123456789"\n`);
+  process.exit(1);
+}
 
 async function run() {
   console.log(`\n========================================`);
-  console.log(`👑 SUNNO.ASIA — Cipta Superadmin CLI`);
+  console.log(`👑 MORRA.ASIA — Cipta Superadmin CLI`);
   console.log(`========================================`);
   console.log(`- Emel:        ${email}`);
   console.log(`- Nama:        ${fullName}`);
-  console.log(`- Kata Laluan: ${password}`);
+  console.log(`- Kata Laluan: [DILINDUNGI]`);
   console.log(`- Peranan:     ADMIN`);
   console.log(`----------------------------------------`);
 
@@ -52,7 +59,7 @@ async function run() {
     if (listErr.message?.includes("fetch failed")) {
       console.error("\n💡 PANDUAN PENYELESAIAN:");
       console.error("1. Projek Supabase anda mungkin sedang 'PAUSED' (terhenti automatik selepas 7 hari tidak aktif).");
-      console.error("   👉 Buka https://supabase.com/dashboard/project/hnpbiprzzbytowkjydea dan klik 'Restore Project'.");
+      console.error("   👉 Buka https://supabase.com/dashboard dan pastikan projek anda dalam status 'Active'.");
       console.error("2. Pastikan sambungan internet aktif.");
       console.error("3. Semak URL pangkalan data di fail .env.local.");
     }

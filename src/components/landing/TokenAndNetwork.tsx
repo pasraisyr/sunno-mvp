@@ -1,10 +1,24 @@
 import { Coins, GitBranch } from "lucide-react";
 
-const tiers = [
-  { level: "L1 (Direct Sponsor)", percent: "50%", desc: "Penaja terus yang memperkenalkan pengguna/peniaga." },
-  { level: "L2 (Sponsor of L1)", percent: "15%", desc: "Penaja aras kedua di dalam rangkaian." },
-  { level: "L3 (Sponsor of L2)", percent: "12.5%", desc: "Penaja aras ketiga di dalam rangkaian." },
-  { level: "Company Keep", percent: "22.5%", desc: "Kos operasi, penyelenggaraan sistem & pembangunan ekosistem." },
+const scenarios = [
+  {
+    name: "Senario A",
+    title: "Agen memperkenalkan Merchant",
+    desc: "Apabila merchant bertransaksi dengan mana-mana kedai berdaftar, Agen L1 menerima 50% daripada fi platform 5% (2.5% jualan).",
+    split: "50% Agen | 50% MORRA",
+  },
+  {
+    name: "Senario B",
+    title: "Pelanggan Merchant A beli di Merchant A",
+    desc: "Merchant A (L1) menerima 50%, Agen penaja Merchant A (L2) menerima 10%, dan MORRA menerima 40% daripada fi 5%.",
+    split: "50% Kedai | 10% Agen | 40% MORRA",
+  },
+  {
+    name: "Senario C",
+    title: "Pelanggan Merchant A beli di Merchant B",
+    desc: "Merchant A (L1 perujuk pelanggan) menerima 50%, Merchant B penjual menerima hasil jualan bersih, MORRA menerima 50% fi.",
+    split: "50% Perujuk | 50% MORRA",
+  },
 ];
 
 export function TokenAndNetwork() {
@@ -18,20 +32,20 @@ export function TokenAndNetwork() {
               <Coins className="h-6 w-6" />
             </div>
             <p className="mt-4 text-xs font-bold uppercase tracking-wider text-primary">
-               Token System Briefing
+              Token System Briefing
             </p>
             <h3 className="mt-1 text-2xl font-extrabold text-slate-900">
-              Sistem Lejar Token Berasingan
+              Sistem Lejar Token (Belanja → Kumpul → Tebus)
             </h3>
             <p className="mt-3 text-sm leading-relaxed text-slate-600">
-              Setiap perbelanjaan tunai yang sah di Sunno.asia memberi ganjaran{" "}
+              Setiap perbelanjaan tunai yang sah di MORRA.ASIA memberi ganjaran{" "}
               <strong>1 Token untuk setiap RM1.00</strong>. Token direkodkan di dalam
-              lejar khas yang berasingan sepenuhnya daripada dompet tunai (Fiat).
+              lejar khas yang berasingan sepenuhnya daripada wang tunai dan digunakan untuk diskaun pembelian seterusnya.
             </p>
 
             <div className="mt-6 space-y-3 rounded-xl bg-blue-50/60 p-4 text-sm text-slate-700">
               <div className="flex items-center justify-between border-b border-blue-100 pb-2">
-                <span className="font-medium">Kadar Ganjaran Asas</span>
+                <span className="font-medium">Kadar Ganjaran Rasmi</span>
                 <span className="font-bold text-primary">RM1.00 Tunai = 1 Token</span>
               </div>
               <div className="flex items-center justify-between border-b border-blue-100 pb-2">
@@ -39,8 +53,8 @@ export function TokenAndNetwork() {
                 <span className="font-bold text-slate-900">Automatik Selepas Status PAID</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="font-medium">Pengasingan Akaun</span>
-                <span className="font-bold text-slate-900">Lejar Token Khas (Bukan Tunai)</span>
+                <span className="font-medium">Sifat Token</span>
+                <span className="font-bold text-slate-900">Diskaun Sahaja (Bukan Wang Tunai)</span>
               </div>
             </div>
           </div>
@@ -51,29 +65,31 @@ export function TokenAndNetwork() {
               <GitBranch className="h-6 w-6" />
             </div>
             <p className="mt-4 text-xs font-bold uppercase tracking-wider text-primary">
-               Networking System Briefing
+              2-Level Commission Engine
             </p>
             <h3 className="mt-1 text-2xl font-extrabold text-slate-900">
-              Sistem Komisen Rangkaian 3-Tier
+              Komisen 2-Level (Fi Platform 5%)
             </h3>
             <p className="mt-3 text-sm leading-relaxed text-slate-600">
-              Apabila transaksi selesai, tabung komisen (Commission Pool) diagihkan
-              secara telus sehingga 3 aras rujukan:
+              MORRA mengenakan Fi Platform 5%. Semua komisen diagihkan secara telus daripada nilai fi 5% tersebut (Tiada Level 3):
             </p>
 
             <div className="mt-6 space-y-3">
-              {tiers.map((t) => (
+              {scenarios.map((s) => (
                 <div
-                  key={t.level}
-                  className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3"
+                  key={s.name}
+                  className="rounded-xl border border-slate-200 p-3.5 bg-white"
                 >
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">{t.level}</p>
-                    <p className="text-xs text-slate-500">{t.desc}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="rounded-md bg-blue-50 px-2 py-0.5 text-xs font-bold text-primary">
+                      {s.name}
+                    </span>
+                    <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+                      {s.split}
+                    </span>
                   </div>
-                  <span className="rounded-lg bg-primary px-3 py-1 text-sm font-extrabold text-white">
-                    {t.percent}
-                  </span>
+                  <h4 className="mt-1.5 text-xs font-bold text-slate-900">{s.title}</h4>
+                  <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">{s.desc}</p>
                 </div>
               ))}
             </div>

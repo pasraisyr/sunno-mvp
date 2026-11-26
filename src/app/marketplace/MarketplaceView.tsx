@@ -15,6 +15,7 @@ import {
   User,
   Sparkles,
   ShieldCheck,
+  Megaphone,
 } from "lucide-react";
 import { checkoutCartAction } from "./actions";
 import type { CartItem, ProductItem, MarketplaceViewProps } from "./types";
@@ -39,6 +40,16 @@ export function MarketplaceView({
     selectedCategory === "ALL"
       ? products
       : products.filter((p) => p.category_id === selectedCategory);
+
+  // Cari kedai penjual bagi barang pertama dalam bakul
+  const currentCartMerchant =
+    cart.length > 0
+      ? products.find((p) => p.merchants.id === cart[0].merchantId)?.merchants
+      : null;
+
+  // Semak jika kedai membenarkan diskaun token
+  const merchantAllowsTokenDiscount = currentCartMerchant?.token_discount_enabled ?? true;
+  const merchantMaxDiscountPercent = Number(currentCartMerchant?.max_token_discount_percent || 10) / 100;
 
   // Fungsi Tambah ke Bakul
   function addToCart(p: ProductItem) {
@@ -105,9 +116,14 @@ export function MarketplaceView({
   );
   const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Kiraan had maksimum token yang boleh ditebus
+  // Kiraan had maksimum token yang boleh ditebus mengikut ketetapan merchant
+  const maxAllowedByMerchant = merchantAllowsTokenDiscount
+    ? Math.floor(totalCartAmount * merchantMaxDiscountPercent)
+    : 0;
+
   const maxRedeemableTokens = Math.min(
     userTokens,
+    maxAllowedByMerchant,
     Math.floor(totalCartAmount)
   );
 
@@ -158,7 +174,7 @@ export function MarketplaceView({
               <Store className="h-4 w-4" />
             </div>
             <span className="font-extrabold text-primary">
-              SUNNO<span className="text-slate-900">.ASIA</span>
+              MORRA<span className="text-slate-900">.ASIA</span>
             </span>
             <span className="ml-2 rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700">
               Marketplace
@@ -194,14 +210,17 @@ export function MarketplaceView({
 
             {user ? (
               <div className="flex items-center gap-2.5">
-                <Link
-                  href="/network"
-                  className="hidden sm:inline-block text-xs font-bold text-slate-600 hover:text-primary transition"
-                >
-                  Rangkaian
-                </Link>
+                {profile?.role === "AGEN_PROMOTER" && (
+                  <Link
+                    href="/network"
+                    className="flex items-center gap-1.5 rounded-lg bg-purple-50 px-2.5 py-1.5 text-xs font-bold text-purple-700 hover:bg-purple-100 transition"
+                  >
+                    <Megaphone className="h-3.5 w-3.5" />
+                    <span>Portal Agen</span>
+                  </Link>
+                )}
 
-                {profile?.role === "MERCHANT" ? (
+                {profile?.role === "MERCHANT" && (
                   <Link
                     href="/merchant/dashboard"
                     className="flex items-center gap-1.5 rounded-lg bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-primary hover:bg-blue-100 transition"
@@ -209,7 +228,9 @@ export function MarketplaceView({
                     <Store className="h-3.5 w-3.5" />
                     <span>Portal Peniaga</span>
                   </Link>
-                ) : profile?.role === "ADMIN" ? (
+                )}
+
+                {profile?.role === "ADMIN" && (
                   <Link
                     href="/admin"
                     className="flex items-center gap-1.5 rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 transition"
@@ -217,7 +238,9 @@ export function MarketplaceView({
                     <ShieldCheck className="h-3.5 w-3.5" />
                     <span>Panel Admin</span>
                   </Link>
-                ) : (
+                )}
+
+                {(profile?.role === "USER" || !profile?.role) && (
                   <Link
                     href="/wallet"
                     className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
@@ -251,8 +274,8 @@ export function MarketplaceView({
                   Pembayaran Berjaya! Pesanan #{completedOrder.id.slice(0, 8)} Disahkan.
                 </p>
                 <p className="text-xs text-emerald-700">
-                  Anda telah menerima{" "}
-                  <strong>{Math.floor(Number(completedOrder.cash_paid_rm))} Token Sunno</strong>{" "}
+                  Anda telah mengumpul{" "}
+                  <strong>{Math.floor(Number(completedOrder.cash_paid_rm))} Token MORRA</strong>{" "}
                   (RM1 tunai = 1 Token) ke dalam lejar akaun anda!
                 </p>
               </div>
@@ -276,35 +299,46 @@ export function MarketplaceView({
                 <Coins className="h-3.5 w-3.5" /> Ganjaran Setiap Pembelian
               </span>
               <h1 className="mt-2 text-2xl font-extrabold sm:text-3xl">
-                Belanja & Dapatkan 1 Token bagi Setiap RM1.00
+                Belanja & Kumpul 1 Token bagi Setiap RM1.00
               </h1>
-              <p className="mt-1 text-xs text-blue-100 sm:text-sm">
-                Sokong produk rakan niaga tempatan dan tebus token untuk penjimatan segera semasa pembayaran.
+              <p className="mt-1 text-xs text-blue-100 max-w-xl leading-relaxed">
+                Kumpul Token tanpa had dan tebus sebagai potongan diskaun segera pada pembelian seterusnya di kedai-kedai rakan kongsi MORRA.
               </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-white/10 p-3.5 text-center border border-white/20">
+                <span className="text-[10px] uppercase font-bold text-blue-200">Kadar Ganjaran</span>
+                <p className="text-lg font-black">RM1 = 1 Token</p>
+              </div>
+              <div className="rounded-xl bg-white/10 p-3.5 text-center border border-white/20">
+                <span className="text-[10px] uppercase font-bold text-blue-200">Kadar Tebusan</span>
+                <p className="text-lg font-black">1 T = RM1.00</p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Tab Penapis Kategori */}
-        <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
+        {/* Butang Tapis Kategori */}
+        <div className="mb-8 flex gap-2 overflow-x-auto pb-2">
           <button
             onClick={() => setSelectedCategory("ALL")}
-            className={`rounded-lg px-4 py-2 text-xs font-bold shrink-0 transition ${
+            className={`rounded-full px-4 py-2 text-xs font-bold transition shrink-0 ${
               selectedCategory === "ALL"
                 ? "bg-primary text-white"
-                : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
             }`}
           >
-            Semua Produk ({products.length})
+            Semua Produk
           </button>
           {categories.map((c) => (
             <button
               key={c.id}
               onClick={() => setSelectedCategory(c.id)}
-              className={`rounded-lg px-4 py-2 text-xs font-bold shrink-0 transition ${
+              className={`rounded-full px-4 py-2 text-xs font-bold transition shrink-0 ${
                 selectedCategory === c.id
                   ? "bg-primary text-white"
-                  : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                  : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
               }`}
             >
               {c.name}
@@ -314,51 +348,52 @@ export function MarketplaceView({
 
         {/* Senarai Kad Produk */}
         {filteredProducts.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center text-slate-400 text-sm">
-            Tiada produk aktif dijumpai dalam kategori ini.
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center">
+            <ShoppingBag className="mx-auto h-12 w-12 text-slate-300" />
+            <h3 className="mt-4 font-bold text-slate-900">Tiada produk tersenarai</h3>
+            <p className="mt-1 text-xs text-slate-500">
+              Kedai rakan kongsi MORRA sedang memuat naik barangan mereka.
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {filteredProducts.map((p) => (
               <div
                 key={p.id}
-                className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs hover:shadow-md transition"
+                className="group flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-xs hover:border-primary/50 hover:shadow-md transition"
               >
                 <div>
-                  <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
-                    <span className="font-semibold text-primary flex items-center gap-1">
-                      <Store className="h-3.5 w-3.5" />
-                      {p.merchants?.shop_name}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      {p.categories?.name || "Umum"}
                     </span>
-                    {p.categories?.name && (
-                      <span className="rounded bg-slate-100 px-2 py-0.5">
-                        {p.categories.name}
-                      </span>
-                    )}
+                    <span className="rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-primary">
+                      {p.merchants.shop_name}
+                    </span>
                   </div>
 
-                  <h3 className="font-bold text-slate-900 text-base">{p.title}</h3>
-                  {p.description && (
-                    <p className="mt-1 text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                      {p.description}
-                    </p>
-                  )}
+                  <h3 className="mt-2 font-bold text-slate-900 group-hover:text-primary transition line-clamp-1">
+                    {p.title}
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                    {p.description || "Produk berkualiti dari rakan niaga berdaftar MORRA."}
+                  </p>
                 </div>
 
-                <div className="mt-5 border-t border-slate-100 pt-3">
-                  <div className="flex items-baseline justify-between mb-3">
-                    <span className="text-xs text-slate-400">Harga:</span>
-                    <span className="text-lg font-extrabold text-slate-900">
-                      RM {Number(p.price_rm).toFixed(2)}
-                    </span>
+                <div className="mt-4 border-t border-slate-100 pt-3 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-slate-400">Harga</span>
+                    <p className="text-base font-extrabold text-primary">
+                      RM {parseFloat(String(p.price_rm)).toFixed(2)}
+                    </p>
                   </div>
 
                   <button
                     onClick={() => addToCart(p)}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-900 transition"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-white hover:bg-primary transition shadow-xs"
+                    title="Tambah ke Bakul"
                   >
-                    <ShoppingBag className="h-3.5 w-3.5" />
-                    + Tambah Ke Bakul
+                    <Plus className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -367,19 +402,19 @@ export function MarketplaceView({
         )}
       </main>
 
-      {/* SLIDE-OVER BAKUL BELANJA (CART DRAWER) */}
+      {/* Slider Bakul Belanja (Sidebar Drawer) */}
       {isCartOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-xs">
           <div className="flex h-full w-full max-w-md flex-col justify-between bg-white p-6 shadow-2xl">
             <div>
-              <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-                <div className="flex items-center gap-2 font-bold text-slate-900">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-2">
                   <ShoppingCart className="h-5 w-5 text-primary" />
-                  <span>Bakul Belanja ({totalCartItems})</span>
+                  <h2 className="font-extrabold text-slate-900">Bakul Belanja</h2>
                 </div>
                 <button
                   onClick={() => setIsCartOpen(false)}
-                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 text-sm font-bold"
+                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
                 >
                   ✕
                 </button>
@@ -390,15 +425,21 @@ export function MarketplaceView({
                   Bakul anda masih kosong.
                 </div>
               ) : (
-                <div className="mt-4 divide-y divide-slate-100 overflow-y-auto max-h-[45vh]">
-                  <p className="text-xs text-slate-500 mb-2">
-                    Kedai: <strong>{cart[0]?.merchantName}</strong>
-                  </p>
+                <div className="mt-4 max-h-[45vh] overflow-y-auto divide-y divide-slate-100 pr-1">
+                  <div className="mb-2 text-xs font-semibold text-slate-500">
+                    Kedai: <strong>{cart[0].merchantName}</strong>
+                  </div>
+
                   {cart.map((item) => (
-                    <div key={item.productId} className="flex items-center justify-between py-3">
+                    <div
+                      key={item.productId}
+                      className="flex items-center justify-between py-3"
+                    >
                       <div>
-                        <h4 className="text-sm font-bold text-slate-900">{item.productTitle}</h4>
-                        <p className="text-xs font-semibold text-primary">
+                        <p className="text-xs font-bold text-slate-900">
+                          {item.productTitle}
+                        </p>
+                        <p className="text-[11px] text-primary font-semibold">
                           RM {item.price.toFixed(2)} x {item.quantity} = RM{" "}
                           {(item.price * item.quantity).toFixed(2)}
                         </p>
@@ -407,7 +448,7 @@ export function MarketplaceView({
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => updateQuantity(item.productId, -1)}
-                          className="rounded-md border border-slate-200 p-1 hover:bg-slate-50"
+                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100"
                         >
                           <Minus className="h-3 w-3" />
                         </button>
@@ -416,7 +457,7 @@ export function MarketplaceView({
                         </span>
                         <button
                           onClick={() => updateQuantity(item.productId, 1)}
-                          className="rounded-md border border-slate-200 p-1 hover:bg-slate-50"
+                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100"
                         >
                           <Plus className="h-3 w-3" />
                         </button>
@@ -429,12 +470,12 @@ export function MarketplaceView({
 
             {cart.length > 0 && (
               <div className="border-t border-slate-200 pt-4">
-                {/* Bahagian Tebus Token (Jika ada baki token) */}
-                {userTokens > 0 && (
+                {/* Bahagian Tebus Token */}
+                {userTokens > 0 && merchantAllowsTokenDiscount && maxRedeemableTokens > 0 && (
                   <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50/80 p-3.5">
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-1.5 text-xs font-bold text-primary">
-                        <Sparkles className="h-4 w-4" /> Tebus Token Sunno (1 Token = RM1)
+                        <Sparkles className="h-4 w-4" /> Tebus Token (1 Token = RM1 Diskaun)
                       </span>
                       <span className="text-[11px] text-slate-500 font-semibold">
                         Baki: <strong>{userTokens}</strong>
@@ -491,7 +532,12 @@ export function MarketplaceView({
                   )}
 
                   <div className="flex justify-between text-slate-400 text-[11px]">
-                    <span>Caj Pengurusan Platform (2%):</span>
+                    <span>Fi Platform MORRA (5%):</span>
+                    <span>Termasuk</span>
+                  </div>
+
+                  <div className="flex justify-between text-slate-400 text-[11px]">
+                    <span>Caj CHIP Gateway (1%):</span>
                     <span>Termasuk</span>
                   </div>
 

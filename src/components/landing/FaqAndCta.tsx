@@ -1,19 +1,19 @@
 const faqs = [
   {
-    q: "Apakah beza antara Token Sunno dan wang tunai (RM)?",
-    a: "Token Sunno ialah mata ganjaran kesetiaan yang direkodkan dalam lejar berasingan (RM1 dibelanjakan = 1 Token). Ia digunakan untuk penebusan diskaun dalam ekosistem Sunno dan tidak dicampur dengan dompet tunai.",
+    q: "Apakah beza antara Token MORRA dan wang tunai (RM)?",
+    a: "Token MORRA ialah mata ganjaran kesetiaan yang direkodkan dalam lejar berasingan (RM1 dibelanjakan = 1 Token). Ia digunakan untuk penebusan diskaun semasa checkout dalam ekosistem MORRA dan tidak boleh dikeluarkan sebagai wang tunai.",
   },
   {
     q: "Bagaimana cara menjadi Pioneer Merchant?",
-    a: "Anda hanya perlu mendaftar akaun peniaga dan melengkapkan yuran penyediaan sekali bayar sebanyak RM512 melalui gerbang pembayaran CHIP. Kedai anda akan diaktifkan serta-merta.",
+    a: "Anda hanya perlu mendaftar akaun peniaga dan melengkapkan yuran penyediaan sistem sekali bayar sebanyak RM512 melalui gerbang pembayaran CHIP. Kedai anda akan diaktifkan serta-merta.",
   },
   {
-    q: "Bagaimana komisen 3-Tier dikira?",
-    a: "Setiap kali ahli di bawah rujukan anda (sehingga 3 aras: L1, L2, L3) membuat pembelian yang berjaya, sistem mengira bahagian anda daripada tabung komisen (50% L1, 15% L2, 12.5% L3).",
+    q: "Bagaimana komisen 2-Level MORRA dikira?",
+    a: "MORRA mengenakan Fi Platform 5% daripada nilai transaksi. Komisen diagihkan daripada tabung fi 5% tersebut mengikut 3 senario rasmi: Senario A (Agen L1 50%, MORRA 50%), Senario B (Merchant L1 50%, Agen L2 10%, MORRA 40%), dan Senario C (Merchant L1 50%, Penjual 0%, MORRA 50%). Tiada Level 3 dalam ekosistem MORRA.",
   },
   {
-    q: "Adakah pembayaran di Sunno.asia selamat?",
-    a: "Ya, semua transaksi diproses melalui CHIP Payment Gateway dengan pengesahan tandatangan keselamatan (Webhook Signature Verification).",
+    q: "Adakah pembayaran di MORRA.ASIA selamat?",
+    a: "Ya, semua transaksi diproses melalui CHIP Payment Gateway dengan pengesahan tandatangan keselamatan (Webhook Signature Verification) serta pengasingan lejar settlement yang telus.",
   },
 ];
 
@@ -48,18 +48,17 @@ export function FaqAndCta() {
         </div>
       </section>
 
-      {/* SEKSYEN 9: Call-To-Action (Daftar Merchant / Sertai Sunno) */}
+      {/* SEKSYEN 9: Call-To-Action (Daftar Merchant / Sertai MORRA) */}
       <section id="cta-join" className="bg-primary py-16 text-white md:py-20">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6">
           <p className="text-xs font-bold uppercase tracking-widest text-blue-200">
-             Sertai Sekarang
+            Sertai Sekarang
           </p>
           <h2 className="mt-2 text-3xl font-extrabold sm:text-4xl">
-            Bersedia Menyertai Ekosistem Digital SUNNO.ASIA?
+            Bersedia Menyertai Ekosistem Digital MORRA.ASIA?
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-base text-blue-100">
-            Daftar sebagai Pioneer Merchant untuk mengembangkan perniagaan anda, atau
-            sertai sebagai pengguna & penggerak komuniti hari ini.
+            Daftar sebagai Pioneer Merchant untuk mengembangkan perniagaan anda, sertai sebagai Agen Promoter, atau kumpul Token sebagai pengguna hari ini.
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -70,7 +69,13 @@ export function FaqAndCta() {
               Daftar Sebagai Merchant
             </a>
             <a
-              href="/register?role=CONSUMER"
+              href="/register?role=AGEN_PROMOTER"
+              className="w-full rounded-xl border border-white/40 bg-purple-700/60 px-8 py-3.5 text-base font-bold text-white transition hover:bg-purple-700 sm:w-auto"
+            >
+              Daftar Sebagai Agen Promoter
+            </a>
+            <a
+              href="/register?role=USER"
               className="w-full rounded-xl border border-white/40 bg-blue-800/50 px-8 py-3.5 text-base font-bold text-white transition hover:bg-blue-800 sm:w-auto"
             >
               Sertai Sebagai Pengguna
@@ -81,7 +86,7 @@ export function FaqAndCta() {
 
       {/* Footer Ringkas */}
       <footer className="border-t border-slate-200 bg-white py-8 text-center text-xs text-slate-500">
-        © {new Date().getFullYear()} SUNNO.ASIA — Digital Ecosystem for Local Businesses. Hak Cipta Terpelihara.
+        © {new Date().getFullYear()} MORRA.ASIA — Digital Ecosystem for Local Businesses. Hak Cipta Terpelihara.
       </footer>
     </div>
   );

@@ -19,7 +19,7 @@ export default async function Homepage() {
       profile = {
         id: prof.id,
         fullName: prof.full_name,
-        role: prof.role as "CONSUMER" | "MERCHANT" | "ADMIN",
+        role: prof.role as "USER" | "AGEN_PROMOTER" | "MERCHANT" | "ADMIN" | string,
       };
     }
   }

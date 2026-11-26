@@ -5,16 +5,15 @@ import Link from "next/link";
 import {
   Store,
   Crown,
-  PackagePlus,
   ShoppingBag,
   Trash2,
   AlertCircle,
   CheckCircle2,
-  Check,
   Coins,
   Users,
   ArrowLeft,
   ExternalLink,
+  Percent,
 } from "lucide-react";
 import {
   saveMerchantShopAction,
@@ -35,11 +34,17 @@ export function MerchantDashboardView({
 }: MerchantDashboardViewProps) {
   const [activeTab, setActiveTab] = useState<"orders" | "products" | "profile">("orders");
 
-  // State Profil Kedai
+  // State Profil Kedai & Tetapan Diskaun Token
   const [shopName, setShopName] = useState(merchant?.shop_name || "");
   const [slug, setSlug] = useState(merchant?.slug || "");
   const [description, setDescription] = useState(merchant?.description || "");
   const [address, setAddress] = useState(merchant?.address || "");
+  const [tokenDiscountEnabled, setTokenDiscountEnabled] = useState(
+    merchant?.token_discount_enabled ?? false
+  );
+  const [maxTokenDiscountPercent, setMaxTokenDiscountPercent] = useState(
+    merchant?.max_token_discount_percent ? String(merchant.max_token_discount_percent) : "10"
+  );
   const [profileMsg, setProfileMsg] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
 
@@ -53,6 +58,9 @@ export function MerchantDashboardView({
 
   // Bayaran Pioneer
   const [payingPioneer, setPayingPioneer] = useState(false);
+
+  // Single Source of Truth bagi Status Pioneer RM512
+  const isPaidPioneer = merchant?.pioneer_payment_status === "PAID" || Boolean(merchant?.is_active);
 
   // Kiraan Ringkasan Jualan
   const totalSalesRm = orders
@@ -72,11 +80,13 @@ export function MerchantDashboardView({
       slug,
       description,
       address,
+      tokenDiscountEnabled,
+      maxTokenDiscountPercent: parseFloat(maxTokenDiscountPercent) || 0,
     });
     setSavingProfile(false);
 
     if (res.error) setProfileMsg(`❌ ${res.error}`);
-    else setProfileMsg("✅ Profil kedai berjaya disimpan!");
+    else setProfileMsg("✅ Profil kedai dan tetapan diskaun Token berjaya disimpan!");
   }
 
   async function handleAddProduct(e: React.FormEvent) {
@@ -146,7 +156,7 @@ export function MerchantDashboardView({
               <Store className="h-4 w-4" />
             </div>
             <span className="font-extrabold text-primary">
-              SUNNO<span className="text-slate-900">.ASIA</span>
+              MORRA<span className="text-slate-900">.ASIA</span>
             </span>
             <span className="ml-2 rounded-md bg-blue-50 px-2 py-0.5 text-xs font-bold text-primary">
               Portal Peniaga
@@ -201,18 +211,18 @@ export function MerchantDashboardView({
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-        {/* Banner Info untuk Pengguna Biasa (Consumer) yang masuk ke Portal Peniaga */}
-        {profile?.role === "CONSUMER" && !merchant && (
+        {/* Banner Info untuk Pengguna (User) yang masuk ke Portal Peniaga */}
+        {profile?.role === "USER" && !merchant && (
           <div className="mb-8 rounded-2xl border border-blue-200 bg-blue-50/70 p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-3">
                 <Store className="mt-1 h-6 w-6 shrink-0 text-primary" />
                 <div>
                   <h3 className="font-bold text-slate-900">
-                    Akaun Anda Berstatus Pengguna (Consumer)
+                    Akaun Anda Berstatus Pengguna (User)
                   </h3>
                   <p className="mt-1 text-xs leading-relaxed text-slate-600">
-                    Anda sedang melihat Portal Peniaga. Jika anda berhasrat untuk membuka kedai dan mula menjual produk di Marketplace Sunno, sila lengkapkan maklumat kedai dan sertai <strong>Pakej Pioneer (RM512)</strong> di bawah.
+                    Anda sedang melihat Portal Peniaga. Jika anda berhasrat untuk membuka kedai dan mula menjual produk di Marketplace MORRA, sila lengkapkan maklumat kedai dan sertai <strong>Pakej Pioneer (RM512)</strong> di bawah.
                   </p>
                 </div>
               </div>
@@ -226,19 +236,19 @@ export function MerchantDashboardView({
           </div>
         )}
 
-        {/* Banner Pioneer Status (RM512) */}
-        {!merchant?.is_active ? (
+        {/* Banner Pioneer Status (RM512) — Single Source of Truth */}
+        {!isPaidPioneer ? (
           <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-3">
                 <AlertCircle className="mt-1 h-6 w-6 shrink-0 text-amber-600" />
                 <div>
                   <h3 className="font-bold text-amber-900">
-                    Kedai Anda Belum Diaktifkan (Status Pioneer Pending)
+                    Kedai Anda Belum Diaktifkan (Status Pioneer: {merchant?.pioneer_payment_status || "PENDING"})
                   </h3>
                   <p className="mt-1 text-xs leading-relaxed text-amber-700">
                     Selesaikan yuran penyediaan <strong>Pakej Pioneer Merchant (RM512)</strong>{" "}
-                    melalui CHIP untuk membolehkan produk anda muncul di Marketplace umum.
+                    melalui CHIP untuk membolehkan produk anda muncul di Marketplace umum MORRA.
                   </p>
                 </div>
               </div>
@@ -257,7 +267,7 @@ export function MerchantDashboardView({
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
               <span>
-                Tahniah! Anda adalah <strong>Pioneer Merchant Aktif</strong>. Kedai anda kini dibuka kepada umum.
+                Tahniah! Anda adalah <strong>Pioneer Merchant Sah & Aktif</strong>. Kedai anda kini dibuka kepada umum.
               </span>
             </div>
             <Link
@@ -303,7 +313,7 @@ export function MerchantDashboardView({
                 : "text-slate-600 hover:bg-slate-200/60"
             }`}
           >
-            Profil Kedai
+            Profil & Tetapan Kedai
           </button>
         </div>
 
@@ -336,76 +346,83 @@ export function MerchantDashboardView({
 
             {/* Senarai Pesanan Masuk */}
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-              <h3 className="font-bold text-slate-900 text-base">Senarai Pesanan Masuk</h3>
+              <h3 className="font-bold text-slate-900">Pesanan Pelanggan Terkini</h3>
               <p className="mt-1 text-xs text-slate-500">
-                Urus dan kemas kini status pesanan pelanggan kedai anda
+                Urus status pesanan dan semak barang yang dibeli oleh pelanggan
               </p>
 
               {orders.length === 0 ? (
                 <div className="mt-8 rounded-xl border border-dashed border-slate-200 py-12 text-center text-sm text-slate-400">
-                  Belum ada pesanan masuk setakat ini.
+                  Belum ada pesanan direkodkan untuk kedai ini.
                 </div>
               ) : (
-                <div className="mt-6 divide-y divide-slate-100 overflow-x-auto">
-                  {orders.map((ord) => (
+                <div className="mt-4 divide-y divide-slate-100">
+                  {orders.map((o) => (
                     <div
-                      key={ord.id}
-                      className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+                      key={o.id}
+                      className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"
                     >
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-extrabold text-sm text-slate-900">
-                            Pesanan #{ord.id.slice(0, 8)}
+                          <span className="text-sm font-bold text-slate-900">
+                            #{o.id.slice(0, 8)}
                           </span>
                           <span
                             className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase ${
-                              ord.status === "PAID"
+                              o.status === "PAID"
                                 ? "bg-emerald-100 text-emerald-800"
-                                : ord.status === "COMPLETED"
+                                : o.status === "COMPLETED"
                                 ? "bg-blue-100 text-blue-800"
+                                : o.status === "CANCELLED"
+                                ? "bg-red-100 text-red-800"
                                 : "bg-amber-100 text-amber-800"
                             }`}
                           >
-                            {ord.status}
+                            {o.status}
                           </span>
                         </div>
-
                         <p className="mt-1 text-xs text-slate-500">
-                          Pembeli:{" "}
-                          <strong className="text-slate-700">
-                            {ord.profiles?.full_name || "Pelanggan"}
-                          </strong>{" "}
-                          ({ord.profiles?.phone_number || "Tiada No. Tel"})
+                          Pelanggan: <strong>{o.profiles?.full_name || "Pelanggan"}</strong> (
+                          {o.profiles?.phone_number || "Tiada No. Tel"})
                         </p>
 
-                        {/* Senarai Barang */}
-                        <div className="mt-2 space-y-1">
-                          {ord.order_items?.map((item) => (
-                            <p key={item.id} className="text-xs text-slate-600">
-                              • {item.quantity}x {item.products?.title || "Produk"} (RM{" "}
-                              {parseFloat(String(item.subtotal_rm)).toFixed(2)})
-                            </p>
-                          ))}
-                        </div>
+                        {/* Senarai Item Produk */}
+                        {o.order_items && o.order_items.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {o.order_items.map((it) => (
+                              <span
+                                key={it.id}
+                                className="rounded bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700"
+                              >
+                                {it.products?.title || "Produk"} x{it.quantity} (RM
+                                {parseFloat(String(it.subtotal_rm)).toFixed(2)})
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <p className="text-xs text-slate-400">Jumlah Resit:</p>
-                          <p className="text-base font-extrabold text-primary">
-                            RM {Number(ord.total_amount_rm).toFixed(2)}
-                          </p>
-                        </div>
+                        <span className="text-sm font-extrabold text-primary">
+                          RM {parseFloat(String(o.total_amount_rm)).toFixed(2)}
+                        </span>
 
-                        {ord.status === "PAID" && (
-                          <button
-                            onClick={() => handleUpdateStatus(ord.id, "COMPLETED")}
-                            className="flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 transition"
-                          >
-                            <Check className="h-3.5 w-3.5" />
-                            Tandakan Selesai
-                          </button>
-                        )}
+                        {/* Pilihan Tukar Status Pesanan */}
+                        <select
+                          value={o.status}
+                          onChange={(e) =>
+                            handleUpdateStatus(
+                              o.id,
+                              e.target.value as "PENDING" | "PAID" | "CANCELLED" | "COMPLETED"
+                            )
+                          }
+                          className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700 outline-none"
+                        >
+                          <option value="PENDING">PENDING</option>
+                          <option value="PAID">PAID</option>
+                          <option value="COMPLETED">COMPLETED</option>
+                          <option value="CANCELLED">CANCELLED</option>
+                        </select>
                       </div>
                     </div>
                   ))}
@@ -415,21 +432,18 @@ export function MerchantDashboardView({
           </div>
         )}
 
-        {/* KANDUNGAN TAB 2: PENGURUSAN PRODUK */}
+        {/* KANDUNGAN TAB 2: PRODUK KEDAI */}
         {activeTab === "products" && (
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
             {/* Borang Tambah Produk */}
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs lg:col-span-5">
-              <div className="flex items-center gap-2 text-primary font-bold text-base">
-                <PackagePlus className="h-5 w-5" />
-                Tambah Produk Baru
-              </div>
+              <h3 className="font-bold text-slate-900">Tambah Produk Baru</h3>
               <p className="mt-1 text-xs text-slate-500">
-                Masukkan maklumat item jualan anda
+                Pamerkan barang atau servis anda di Marketplace
               </p>
 
               {prodMsg && (
-                <div className="mt-3 rounded-lg bg-slate-100 p-2.5 text-xs font-medium">
+                <div className="mt-4 rounded-lg bg-slate-100 p-3 text-xs font-medium">
                   {prodMsg}
                 </div>
               )}
@@ -437,30 +451,29 @@ export function MerchantDashboardView({
               <form onSubmit={handleAddProduct} className="mt-4 space-y-3.5">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700">
-                    Nama Produk
+                    Nama / Tajuk Produk
                   </label>
                   <input
                     type="text"
                     required
                     value={prodTitle}
                     onChange={(e) => setProdTitle(e.target.value)}
-                    placeholder="Contoh: Kopi O Kampung 250g"
+                    placeholder="Contoh: Nasi Lemak Sambal Sotong"
                     className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700">
-                    Harga Jualan (RM)
+                    Harga (RM)
                   </label>
                   <input
                     type="number"
                     step="0.01"
-                    min="0.10"
                     required
                     value={prodPrice}
                     onChange={(e) => setProdPrice(e.target.value)}
-                    placeholder="Contoh: 15.00"
+                    placeholder="15.00"
                     className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary"
                   />
                 </div>
@@ -491,7 +504,7 @@ export function MerchantDashboardView({
                     rows={3}
                     value={prodDesc}
                     onChange={(e) => setProdDesc(e.target.value)}
-                    placeholder="Penerangan ringkas ramuan / kelebihan produk..."
+                    placeholder="Bahan-bahan, saiz hidangan, atau maklumat penghantaran..."
                     className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary"
                   />
                 </div>
@@ -552,14 +565,14 @@ export function MerchantDashboardView({
           </div>
         )}
 
-        {/* KANDUNGAN TAB 3: PROFIL KEDAI */}
+        {/* KANDUNGAN TAB 3: PROFIL KEDAI & TETAPAN TOKEN */}
         {activeTab === "profile" && (
           <div className="max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xs sm:p-8">
             <h3 className="text-lg font-bold text-slate-900">
-              Pengurusan Profil Kedai
+              Pengurusan Profil & Tetapan Kedai
             </h3>
             <p className="mt-1 text-xs text-slate-500">
-              Maklumat ini akan dipaparkan kepada pembeli di Sunno Marketplace
+              Maklumat ini akan dipaparkan kepada pembeli di MORRA Marketplace
             </p>
 
             {profileMsg && (
@@ -588,7 +601,7 @@ export function MerchantDashboardView({
                   Pautan URL Kedai (Slug)
                 </label>
                 <div className="mt-1 flex items-center rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-500">
-                  <span>sunno.asia/</span>
+                  <span>morra.asia/</span>
                   <input
                     type="text"
                     required
@@ -624,6 +637,48 @@ export function MerchantDashboardView({
                   placeholder="Ceritakan tentang perniagaan dan kepakaran kedai anda..."
                   className="mt-1 w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-primary"
                 />
+              </div>
+
+              {/* Tetapan Diskaun Penebusan Token (MORRA Fasa 1) */}
+              <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-primary flex items-center gap-1.5">
+                      <Percent className="h-4 w-4" /> Tawaran Diskaun Penebusan Token
+                    </span>
+                    <p className="mt-0.5 text-[11px] text-slate-600">
+                      Benarkan pembeli menebus Token mereka untuk potongan diskaun di kedai anda.
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={tokenDiscountEnabled}
+                    onChange={(e) => setTokenDiscountEnabled(e.target.checked)}
+                    className="h-4 w-4 rounded text-primary focus:ring-primary"
+                  />
+                </div>
+
+                {tokenDiscountEnabled && (
+                  <div className="mt-3 border-t border-blue-200/60 pt-3">
+                    <label className="block text-xs font-semibold text-slate-700">
+                      Had Maksimum Diskaun Token (% daripada jumlah bil)
+                    </label>
+                    <div className="mt-1 flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={maxTokenDiscountPercent}
+                        onChange={(e) => setMaxTokenDiscountPercent(e.target.value)}
+                        className="w-24 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-bold text-slate-900 outline-none focus:border-primary"
+                      />
+                      <span className="text-xs font-semibold text-slate-600">% diskaun</span>
+                    </div>
+                    <p className="mt-1 text-[10px] text-slate-500">
+                      Contoh: Jika 10%, pesanan RM100 hanya boleh ditebus maksimum 10 Token (RM10 diskaun).
+                    </p>
+                  </div>
+                )}
               </div>
 
               <button

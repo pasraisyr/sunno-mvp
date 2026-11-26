@@ -3,7 +3,10 @@
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 import { createChipPurchase } from "@/lib/chip/client";
-import { distributeOrderCommissions } from "@/lib/commission";
+import {
+  calculateAndDistributeMorraCommissions,
+  calculateOrderSplitSettlement,
+} from "@/lib/commission";
 
 // 1. Dapatkan produk & kedai aktif untuk Marketplace
 export async function getMarketplaceData(completedOrderId?: string) {
@@ -13,25 +16,41 @@ export async function getMarketplaceData(completedOrderId?: string) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Jika baru selesai bayar di CHIP (simulasi redirect localhost)
+  // Jika baru selesai bayar di CHIP (simulasi redirect browser)
   let completedOrder = null;
   if (completedOrderId && user) {
     const { data: ord } = await supabase
       .from("orders")
-      .select("*, merchants(shop_name)")
+      .select("*, merchants(id, shop_name)")
       .eq("id", completedOrderId)
       .eq("user_id", user.id)
       .maybeSingle();
 
     if (ord && ord.status === "PENDING") {
-      // Kemas kini status kepada PAID
+      const cashPaid = Number(ord.cash_paid_rm);
+      const grossAmount = Number(ord.total_amount_rm);
+      const tokensRedeemed = Number(ord.tokens_used);
+
+      // Pecahan Settlement (ADDENDUM CHIP GATEWAY FEE 1% Min RM0.15, Max RM1.50 & Fi MORRA 5%)
+      const { morraPlatformFee, chipGatewayFee, merchantNetAmount } =
+        calculateOrderSplitSettlement(grossAmount);
+
+      // Kemas kini status kepada PAID beserta lejar kewangan
       await supabase
         .from("orders")
-        .update({ status: "PAID" })
+        .update({
+          status: "PAID",
+          gross_amount: grossAmount,
+          token_discount_amount: tokensRedeemed,
+          chip_gateway_fee: chipGatewayFee,
+          morra_platform_fee: morraPlatformFee,
+          merchant_net_amount: merchantNetAmount,
+          platform_fee_rm: morraPlatformFee,
+          merchant_net_rm: merchantNetAmount,
+        })
         .eq("id", ord.id);
 
       // A. Jika ada token yang ditebus, tolak dari lejar (REDEEMED)
-      const tokensRedeemed = Number(ord.tokens_used);
       if (tokensRedeemed > 0) {
         await supabase.from("token_ledger").insert({
           user_id: user.id,
@@ -43,27 +62,28 @@ export async function getMarketplaceData(completedOrderId?: string) {
       }
 
       // B. Tambah Token baru bagi tunai yang dibayar (RM1 tunai = 1 Token)
-      const tokenEarned = Math.floor(Number(ord.cash_paid_rm));
+      const tokenEarned = Math.floor(cashPaid);
       if (tokenEarned > 0) {
         await supabase.from("token_ledger").insert({
           user_id: user.id,
           amount: tokenEarned,
           type: "EARNED",
           reference_id: ord.id,
-          description: `Ganjaran tunai pesanan #${ord.id.slice(0, 8)}`,
+          description: `Kumpul token pesanan #${ord.id.slice(0, 8)}`,
         });
       }
 
-      // C. Enjin Komisen 3-Tier (L1: 50%, L2: 15%, L3: 12.5%)
+      // C. Enjin Komisen 2-Level MORRA (Berasaskan Fi Platform 5%)
       const supabaseAdmin = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
       );
-      await distributeOrderCommissions(
+      await calculateAndDistributeMorraCommissions(
         supabaseAdmin,
         ord.id,
         user.id,
-        Number(ord.cash_paid_rm)
+        ord.merchant_id,
+        grossAmount
       );
 
       ord.status = "PAID";
@@ -74,7 +94,7 @@ export async function getMarketplaceData(completedOrderId?: string) {
   // Ambil semua produk dari kedai yang AKTIF (is_active = true)
   const { data: products } = await supabase
     .from("products")
-    .select("*, merchants!inner(id, shop_name, slug, is_active), categories(id, name)")
+    .select("*, merchants!inner(id, shop_name, slug, is_active, token_discount_enabled, max_token_discount_percent), categories(id, name)")
     .eq("is_available", true)
     .eq("merchants.is_active", true)
     .order("created_at", { ascending: false });
@@ -99,7 +119,7 @@ export async function getMarketplaceData(completedOrderId?: string) {
       profile = {
         id: prof.id,
         fullName: prof.full_name,
-        role: prof.role as "CONSUMER" | "MERCHANT" | "ADMIN",
+        role: prof.role || "USER",
       };
     }
 
@@ -149,6 +169,13 @@ export async function checkoutCartAction(params: {
     return { error: "Bakul belanja anda kosong." };
   }
 
+  // Ambil maklumat tetapan diskaun kedai merchant
+  const { data: merchant } = await supabase
+    .from("merchants")
+    .select("id, token_discount_enabled, max_token_discount_percent")
+    .eq("id", params.merchantId)
+    .single();
+
   // Kira jumlah harga pesanan (RM)
   const totalAmountRm = params.items.reduce(
     (sum, item) => sum + item.price * item.quantity,
@@ -165,20 +192,32 @@ export async function checkoutCartAction(params: {
     return curr.type === "EARNED" ? acc + Number(curr.amount) : acc - Number(curr.amount);
   }, 0);
 
-  // Hadkan penebusan token:
+  // Hadkan penebusan token mengikut polisi MORRA Fasa 1:
+  // - Merchant bebas menetapkan sama ada diskaun token diaktifkan
   // - Tidak boleh melebihi baki pengguna
   // - 1 Token = RM1.00 diskaun
-  // - Maksimum tebusan ialah nilai bil tolak RM1 (supaya ada baki tunai CHIP minima) melainkan 100% token
-  const requestedRedeem = Math.max(0, Math.floor(params.tokensToRedeem || 0));
-  const maxTokensAllowed = Math.min(requestedRedeem, Math.max(0, availableTokens), Math.floor(totalAmountRm));
+  let maxTokensAllowed = 0;
+  if (merchant?.token_discount_enabled) {
+    const maxPercent = Number(merchant.max_token_discount_percent || 10) / 100;
+    const maxDiscountAllowed = Math.floor(totalAmountRm * maxPercent);
+    const requestedRedeem = Math.max(0, Math.floor(params.tokensToRedeem || 0));
+    maxTokensAllowed = Math.min(requestedRedeem, Math.max(0, availableTokens), maxDiscountAllowed);
+  } else if (params.tokensToRedeem && params.tokensToRedeem > 0) {
+    // Jika kedai tidak mengaktifkan diskaun token
+    maxTokensAllowed = 0;
+  }
+
   const tokensUsed = maxTokensAllowed;
 
   // Kiraan Tunai Sebenar
   const cashPaidRm = Math.max(0, Number((totalAmountRm - tokensUsed).toFixed(2)));
 
-  // Kira caj pengurusan / transaction fee platform Sunno (2% atau min RM0.50)
-  const platformFeeRm = Number((totalAmountRm * 0.02).toFixed(2));
-  const merchantNetRm = Number(Math.max(0, totalAmountRm - platformFeeRm).toFixed(2));
+  // Pecahan Settlement mengikut addendum rasmi:
+  // 1. MORRA Platform Fee: 5%
+  // 2. CHIP Gateway Fee: 1% (Min RM0.15, Max RM1.50)
+  // 3. Hak Bersih Peniaga: ~94% (Total - Fi 5% - Caj CHIP)
+  const { morraPlatformFee, chipGatewayFee, merchantNetAmount } =
+    calculateOrderSplitSettlement(totalAmountRm);
 
   // A. Cipta rekod kepala resit di jadual 'orders'
   const { data: order, error: orderErr } = await supabase
@@ -187,11 +226,16 @@ export async function checkoutCartAction(params: {
       user_id: user.id,
       merchant_id: params.merchantId,
       total_amount_rm: totalAmountRm,
-      cash_paid_rm: cashPaidRm,
+      gross_amount: totalAmountRm,
       tokens_used: tokensUsed,
+      token_discount_amount: tokensUsed,
+      cash_paid_rm: cashPaidRm,
+      morra_platform_fee: morraPlatformFee,
+      chip_gateway_fee: chipGatewayFee,
+      merchant_net_amount: merchantNetAmount,
+      platform_fee_rm: morraPlatformFee,
+      merchant_net_rm: merchantNetAmount,
       status: "PENDING",
-      platform_fee_rm: platformFeeRm,
-      merchant_net_rm: merchantNetRm,
     })
     .select("id")
     .single();
@@ -217,6 +261,8 @@ export async function checkoutCartAction(params: {
     return { error: `Gagal menyimpan butiran pesanan: ${itemsErr.message}` };
   }
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
   // C. Jika baki tunai kena bayar adalah 0 (dibayar 100% dengan token)
   if (cashPaidRm === 0) {
     await supabase.from("orders").update({ status: "PAID" }).eq("id", order.id);
@@ -227,8 +273,21 @@ export async function checkoutCartAction(params: {
       reference_id: order.id,
       description: `Penebusan 100% token bagi pesanan #${order.id.slice(0, 8)}`,
     });
+
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    await calculateAndDistributeMorraCommissions(
+      supabaseAdmin,
+      order.id,
+      user.id,
+      params.merchantId,
+      totalAmountRm
+    );
+
     return {
-      redirectUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/marketplace?order_id=${order.id}&paid=true`,
+      redirectUrl: `${siteUrl}/marketplace?order_id=${order.id}&paid=true`,
     };
   }
 
@@ -236,13 +295,13 @@ export async function checkoutCartAction(params: {
   try {
     const purchase = await createChipPurchase({
       orderId: order.id,
-      customerEmail: user.email || "consumer@sunno.asia",
-      customerName: user.user_metadata?.full_name || "Pelanggan Sunno",
+      customerEmail: user.email || "consumer@morra.asia",
+      customerName: user.user_metadata?.full_name || "Pelanggan MORRA",
       productTitle: `Pesanan #${order.id.slice(0, 8)} (Tebus ${tokensUsed} Token)`,
       amountInRm: cashPaidRm,
-      successRedirectUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/marketplace?order_id=${order.id}&paid=true`,
-      failureRedirectUrl: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/marketplace?order_id=${order.id}&paid=false`,
-      webhookCallbackUrl: "https://sunno.asia/api/webhooks/chip",
+      successRedirectUrl: `${siteUrl}/marketplace?order_id=${order.id}&paid=true`,
+      failureRedirectUrl: `${siteUrl}/marketplace?order_id=${order.id}&paid=false`,
+      webhookCallbackUrl: `${siteUrl}/api/webhooks/chip`,
     });
 
     return { checkoutUrl: purchase.checkout_url };

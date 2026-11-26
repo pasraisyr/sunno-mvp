@@ -41,6 +41,9 @@ export interface MerchantDashboardViewProps {
     description?: string | null;
     address?: string | null;
     is_active: boolean;
+    pioneer_payment_status?: "UNPAID" | "PENDING" | "PAID" | "REVOKED" | string | null;
+    token_discount_enabled?: boolean;
+    max_token_discount_percent?: number;
   } | null;
   products?: ProductRecord[];
   orders?: OrderRecord[];

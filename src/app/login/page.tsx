@@ -26,10 +26,13 @@ export default function LoginPage() {
       return;
     }
 
+    // Halatuju mengikut Peranan (Role)
     if (result.role === "MERCHANT") {
       router.push("/merchant/dashboard");
     } else if (result.role === "ADMIN") {
       router.push("/admin");
+    } else if (result.role === "AGEN_PROMOTER") {
+      router.push("/network");
     } else {
       router.push("/marketplace");
     }
@@ -43,7 +46,7 @@ export default function LoginPage() {
             <Store className="h-5 w-5" />
           </div>
           <span className="text-xl font-extrabold text-primary">
-            SUNNO<span className="text-slate-900">.ASIA</span>
+            MORRA<span className="text-slate-900">.ASIA</span>
           </span>
         </Link>
 
@@ -101,7 +104,7 @@ export default function LoginPage() {
         <p className="mt-6 text-center text-xs text-slate-600">
           Belum mempunyai akaun?{" "}
           <Link href="/register" className="font-bold text-primary hover:underline">
-            Daftar sekarang
+            Daftar Sekarang
           </Link>
         </p>
       </div>

@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   LogOut,
   Users,
+  Megaphone,
 } from "lucide-react";
 import { logoutUserAction } from "@/app/auth/actions";
 
@@ -22,7 +23,7 @@ export interface NavbarProps {
   profile?: {
     id: string;
     fullName: string;
-    role: "CONSUMER" | "MERCHANT" | "ADMIN";
+    role: "USER" | "AGEN_PROMOTER" | "MERCHANT" | "ADMIN" | string;
   } | null;
 }
 
@@ -57,20 +58,20 @@ export function Navbar({ user, profile }: NavbarProps) {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        {/* Logo SUNNO.ASIA */}
+        {/* Logo MORRA.ASIA */}
         <Link href="/" className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white shadow-xs">
             <Store className="h-5 w-5" />
           </div>
           <span className="text-xl font-extrabold tracking-tight text-primary">
-            SUNNO<span className="text-slate-900">.ASIA</span>
+            MORRA<span className="text-slate-900">.ASIA</span>
           </span>
         </Link>
 
         {/* Pautan Navigasi Desktop */}
         <nav className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
-          <a href="#what-is-sunno" className="hover:text-primary transition">
-            Apa Itu Sunno?
+          <a href="#what-is-morra" className="hover:text-primary transition">
+            Apa Itu MORRA?
           </a>
           <a href="#for-merchants" className="hover:text-primary transition">
             Untuk Peniaga
@@ -104,6 +105,8 @@ export function Navbar({ user, profile }: NavbarProps) {
                     ? "bg-red-600"
                     : profile?.role === "MERCHANT"
                     ? "bg-primary"
+                    : profile?.role === "AGEN_PROMOTER"
+                    ? "bg-purple-600"
                     : "bg-emerald-600"
                 }`}
               >
@@ -111,6 +114,8 @@ export function Navbar({ user, profile }: NavbarProps) {
                   <ShieldCheck className="h-3.5 w-3.5" />
                 ) : profile?.role === "MERCHANT" ? (
                   <Store className="h-3.5 w-3.5" />
+                ) : profile?.role === "AGEN_PROMOTER" ? (
+                  <Megaphone className="h-3.5 w-3.5" />
                 ) : (
                   <User className="h-3.5 w-3.5" />
                 )}
@@ -140,7 +145,7 @@ export function Navbar({ user, profile }: NavbarProps) {
                   {/* Maklumat Pengguna Log Masuk */}
                   <div className="px-3 py-2.5 border-b border-slate-100 mb-1">
                     <p className="text-xs font-bold text-slate-900 truncate">
-                      {profile?.fullName || "Pengguna Sunno"}
+                      {profile?.fullName || "Pengguna MORRA"}
                     </p>
                     <p className="text-[11px] text-slate-400 truncate">
                       {user.email}
@@ -151,6 +156,8 @@ export function Navbar({ user, profile }: NavbarProps) {
                           ? "bg-red-100 text-red-700"
                           : profile?.role === "MERCHANT"
                           ? "bg-blue-100 text-blue-700"
+                          : profile?.role === "AGEN_PROMOTER"
+                          ? "bg-purple-100 text-purple-700"
                           : "bg-emerald-100 text-emerald-700"
                       }`}
                     >
@@ -158,7 +165,9 @@ export function Navbar({ user, profile }: NavbarProps) {
                         ? "Superadmin (HQ)"
                         : profile?.role === "MERCHANT"
                         ? "Peniaga (Merchant)"
-                        : "Pengguna (Consumer)"}
+                        : profile?.role === "AGEN_PROMOTER"
+                        ? "Agen Promoter"
+                        : "Pengguna (User)"}
                     </span>
                   </div>
 
@@ -174,6 +183,17 @@ export function Navbar({ user, profile }: NavbarProps) {
                     </Link>
                   )}
 
+                  {profile?.role === "AGEN_PROMOTER" && (
+                    <Link
+                      href="/network"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-purple-700 hover:bg-purple-50 transition"
+                    >
+                      <Megaphone className="h-4 w-4" />
+                      <span>Portal Agen Promoter</span>
+                    </Link>
+                  )}
+
                   {profile?.role === "ADMIN" && (
                     <Link
                       href="/admin"
@@ -185,25 +205,27 @@ export function Navbar({ user, profile }: NavbarProps) {
                     </Link>
                   )}
 
-                  {profile?.role === "CONSUMER" && (
+                  {(profile?.role === "USER" || !profile?.role) && (
                     <Link
                       href="/wallet"
                       onClick={() => setIsDropdownOpen(false)}
                       className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 hover:bg-slate-100 transition"
                     >
                       <Coins className="h-4 w-4 text-primary" />
-                      <span>Dompet Token & Baki</span>
+                      <span>Dompet Token & Diskaun</span>
                     </Link>
                   )}
 
-                  <Link
-                    href="/network"
-                    onClick={() => setIsDropdownOpen(false)}
-                    className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 transition"
-                  >
-                    <Users className="h-4 w-4 text-purple-600" />
-                    <span>Rangkaian 3-Tier</span>
-                  </Link>
+                  {profile?.role !== "USER" && (
+                    <Link
+                      href="/network"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 transition"
+                    >
+                      <Users className="h-4 w-4 text-purple-600" />
+                      <span>Rangkaian 2-Level</span>
+                    </Link>
+                  )}
 
                   <Link
                     href="/marketplace"

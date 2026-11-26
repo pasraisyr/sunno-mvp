@@ -40,7 +40,7 @@ export function WalletView({
                 <Store className="h-4 w-4" />
               </div>
               <span className="font-extrabold text-primary">
-                SUNNO<span className="text-slate-900">.ASIA</span>
+                MORRA<span className="text-slate-900">.ASIA</span>
               </span>
               <span className="ml-1 rounded-md bg-blue-50 px-2 py-0.5 text-xs font-bold text-primary">
                 Dompet Token
@@ -53,7 +53,7 @@ export function WalletView({
               href="/network"
               className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
             >
-              Rangkaian 3-Tier
+              Rangkaian 2-Level
             </Link>
             <Link
               href="/marketplace"
@@ -73,7 +73,7 @@ export function WalletView({
             <div>
               <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-blue-100">
                 <Sparkles className="h-3.5 w-3.5" />
-                Dompet Kesetiaan Sunno
+                Dompet Kesetiaan MORRA
               </div>
               <h1 className="mt-3 text-sm font-semibold text-blue-200">
                 Baki Token Semasa:
@@ -91,7 +91,7 @@ export function WalletView({
                 <strong className="text-white">
                   {profile?.full_name || user?.email}
                 </strong>{" "}
-                • Boleh ditebus untuk diskaun semasa checkout
+                • Boleh ditebus untuk potongan diskaun belian di Marketplace
               </p>
             </div>
 
@@ -115,13 +115,13 @@ export function WalletView({
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-500">
-                Jumlah Token Diperoleh (Earned)
+                Jumlah Token Diperoleh (Kumpul)
               </p>
               <p className="mt-0.5 text-2xl font-extrabold text-emerald-600">
                 +{totalEarned.toLocaleString()} Token
               </p>
               <p className="text-[11px] text-slate-400">
-                Ganjaran automatik RM1 tunai = 1 Token
+                Ganjaran rasmi RM1 tunai = 1 Token
               </p>
             </div>
           </div>
@@ -132,7 +132,7 @@ export function WalletView({
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-500">
-                Jumlah Token Ditebus (Redeemed)
+                Jumlah Token Ditebus (Diskaun)
               </p>
               <p className="mt-0.5 text-2xl font-extrabold text-amber-600">
                 -{totalRedeemed.toLocaleString()} Token
@@ -191,7 +191,7 @@ export function WalletView({
                       <div>
                         <p className="text-sm font-bold text-slate-900">
                           {tx.description ||
-                            (isEarned ? "Ganjaran Belian" : "Penebusan Token")}
+                            (isEarned ? "Ganjaran Belanja" : "Penebusan Diskaun Token")}
                         </p>
                         <div className="mt-1 flex items-center gap-3 text-xs text-slate-400">
                           <span className="flex items-center gap-1">
@@ -236,4 +236,3 @@ export function WalletView({
     </div>
   );
 }
-
